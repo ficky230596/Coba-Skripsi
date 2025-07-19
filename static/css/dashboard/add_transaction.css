@@ -1,0 +1,21 @@
+#gambar_mobil{
+    height: 10rem;
+}
+
+.item-car{
+    cursor: pointer;
+}
+
+.list-invoice{
+    list-style-type: none;
+}
+.list-invoice li{
+    width: 40%;
+}
+.list-invoice li .key{
+    width: 50%;
+}
+
+.selected{
+    border: 2px solid #007bff;
+}

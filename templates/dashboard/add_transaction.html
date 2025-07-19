@@ -1,0 +1,148 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block javascript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"
+    integrity="sha512-bPs7Ae6pVvhOSiIcyUClR7/q2OAsRiovw4vAkX+zJbw3ShAeeqezq50RIIcIURq7Oa20rW2n2q+fyXBNcU9lrw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script type="module" src="{{ url_for('static', filename='js/dashboard/add_transaction.js') }}"></script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
+    integrity="sha512-tS3S5qG0BlhnQROyJXvNjeEM4UpMXHrQfTGmbQ1gKmelCxlSEBUaxhRBj/EFTzpbP4RVSrpEikbmdJobCvhE3g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.css"
+    integrity="sha512-OTcub78R3msOCtY3Tc6FzeDJ8N9qvQn1Ph49ou13xgA9VsH9+LRxoFU6EqLhW4+PKRfU+/HReXmSZXHEkpYoOA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/add_transaction.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='icon/icon.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="title-dashboard pb-0">
+    <h2 class="text-primary m-0">Tambah Transaksi</h2>
+</div>
+
+<div class="px-4">
+    <section class="car-list-section mx-2 p-4 shadow rounded-4 bg-white mb-3" id="list-mobil">
+        <h2 class="mb-3 text-primary">Pilih Mobil</h2>
+        <div class="car-list owl-carousel">
+            {% for dt in data %}
+            <div class="card border-1 rounded-4 overflow-hidden item-car" id="{{dt.id_mobil}}">
+                <img src="{{ url_for('static', filename='Gambar/') }}{{dt.gambar}}" alt="{{dt.gambar}}"
+                    id="gambar_mobil" class="card-img-top">
+                <div class="card-body">
+                    <h5 class="mb-2 text-primary">{{dt.merek}} {{ dt.type_mobil }} ({{ dt.plat }})</h5>
+                    <div class="row">
+                        <div class="col">
+                            <p class="d-flex m-0"><i class="eicon-seat pe-3 fs-5"></i>{{dt.seat}} Seat</p>
+                        </div>
+                        <div class="col-auto">
+                            <p class="d-flex m-0"><i class="eicon-transmission pe-3 fs-5"></i>{{dt.transmisi}}</p>
+                        </div>
+                    </div>
+                    <div class="border-top mt-3 py-3">
+                        <div class="row">
+                            <div class="col">Harga</div>
+                            <div class="col-auto"><span data-target="currency">{{dt.harga}}</span>/ Hari</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p>Tidak ada mobil tersedia.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pembayaran-section mx-2 p-4 shadow rounded-4 bg-white" id="list-mobil">
+        <h2 class="mb-3 text-primary">Invoice</h2>
+        <form id="transactionForm" class="list-invoice">
+            <li class="fs-5 mb-2 row">
+                <div class="col">Merek</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4" id="val_merek"></div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Harga Mobil/Hari</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4" id="val_harga" data-target="currency"></div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Hari Rental</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4"><input class="form-control" id="hari" type="number" min="1"></div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Nama Penyewa</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4"><input class="form-control" id="penyewa" type="text"
+                        placeholder="Masukkan nama penyewa"></div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Sopir</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4">
+                    <input type="checkbox" id="gunakan_sopir">
+                    <label for="gunakan_sopir">Ya</label>
+                </div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Biaya Sopir</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4" id="val_biaya_sopir" data-target="currency">0</div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Pengantaran</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4">
+                    <input type="checkbox" id="gunakan_pengantaran">
+                    <label for="gunakan_pengantaran">Ya</label>
+                </div>
+            </li>
+            <li class="fs-5 mb-2 row pengantaran-section" style="display: none;">
+                <div class="col">Biaya Pengantaran</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4">
+                    <select class="form-select form-select-md" id="delivery_cost">
+                        <option value="0">Gratis</option>
+                        <option value="100000">Rp 100.000</option>
+                        <option value="200000">Rp 200.000</option>
+                    </select>
+                </div>
+            </li>
+            <li class="fs-5 mb-2 row pengantaran-section" style="display: none;">
+                <div class="col">Lokasi Pengantaran</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4">
+                    <input class="form-control" id="delivery_location" type="text"
+                        placeholder="Masukkan lokasi pengantaran">
+                </div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Total</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4" id="val_total" data-target="currency"></div>
+            </li>
+            <li class="fs-5 mb-2 row">
+                <div class="col">Pembayaran</div>
+                <div class="col-auto">:</div>
+                <div class="col ps-4">
+                    <div class="mb-3">
+                        <select class="form-select form-select-md" id="pembayaran">
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                </div>
+            </li>
+            <li class="fs-5 mb-2">
+                <button type="submit" id="btn_bayar" class="btn btn-primary">Bayar</button>
+            </li>
+        </form>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+#jumlah_item{
+    position: relative;
+}
+
+#icon_jumlah{
+    position: absolute;
+    background-color: var(--bs-primary);
+    border-radius: var(--bs-border-radius-xl)!important;
+    padding: 1rem;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+#icon_jumlah i{
+    color: white;
+    font-size: 1rem;
+}
+
+.chart-cont{
+    height: min-content;
+}
+

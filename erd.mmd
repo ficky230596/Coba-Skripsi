@@ -1,0 +1,173 @@
+erDiagram
+    users ||--o{ transaction : "has (user_id)"
+    users ||--o{ ratings : "gives (user_id)"
+    users_admin ||--o{ dataMobil : "adds (user)"
+    dataMobil ||--o{ transaction : "involved (id_mobil)"
+    dataMobil ||--o{ ratings : "receives (car_id)"
+
+    users {
+        string user_id PK
+        string username UK
+        string email UK
+        string phone
+        string name
+        string password
+        string image_path
+        string profile_image_path
+        string address
+        string verif
+        string kode
+        string reset_token
+        boolean reset_token_used
+    }
+
+    users_admin {
+        string username PK
+        string password
+        string email UK
+        string verif
+        string kode
+        datetime expired_username
+    }
+
+    dataMobil {
+        string id_mobil PK
+        string user FK
+        string merek
+        string type_mobil
+        string plat
+        string bahan_bakar
+        string gambar
+        string seat
+        string transmisi
+        string harga
+        string status
+        string status_transaksi
+        string order_id
+        string visibility
+    }
+
+    transaction {
+        string order_id PK
+        string user_id FK
+        string id_mobil FK
+        string penyewa
+        string transaction_token
+        string item
+        string type_mobil
+        string plat
+        string bahan_bakar
+        string seat
+        string transmisi
+        integer total
+        string lama_rental
+        string date_rent
+        string time_rent
+        string end_rent
+        string end_time
+        string status
+        integer biaya_sopir
+        boolean gunakan_pengantaran
+        integer delivery_cost
+        string delivery_location
+        string status_mobil
+        string actual_return_date
+        string actual_return_time
+        string status_pengembalian
+        boolean rating_prompted
+        datetime created_at
+    }erDiagram
+    users ||--o{ transaction : "has (user_id)"
+    users ||--o{ ratings : "gives (user_id)"
+    users_admin ||--o{ dataMobil : "adds (user)"
+    dataMobil ||--o{ transaction : "involved (id_mobil)"
+    dataMobil ||--o{ ratings : "receives (car_id)"
+
+    users {
+        string user_id PK
+        string username UK
+        string email UK
+        string phone
+        string name
+        string password
+        string image_path
+        string profile_image_path
+        string address
+        string verif
+        string kode
+        string reset_token
+        boolean reset_token_used
+    }
+
+    users_admin {
+        string username PK
+        string password
+        string email UK
+        string verif
+        string kode
+        datetime expired_username
+    }
+
+    dataMobil {
+        string id_mobil PK
+        string user FK
+        string merek
+        string type_mobil
+        string plat
+        string bahan_bakar
+        string gambar
+        string seat
+        string transmisi
+        string harga
+        string status
+        string status_transaksi
+        string order_id
+        string visibility
+    }
+
+    transaction {
+        string order_id PK
+        string user_id FK
+        string id_mobil FK
+        string penyewa
+        string transaction_token
+        string item
+        string type_mobil
+        string plat
+        string bahan_bakar
+        string seat
+        string transmisi
+        integer total
+        string lama_rental
+        string date_rent
+        string time_rent
+        string end_rent
+        string end_time
+        string status
+        integer biaya_sopir
+        boolean gunakan_pengantaran
+        integer delivery_cost
+        string delivery_location
+        string status_mobil
+        string actual_return_date
+        string actual_return_time
+        string status_pengembalian
+        boolean rating_prompted
+        datetime created_at
+    }
+
+    ratings {
+        string user_id FK
+        string car_id FK
+        integer rating
+        string komentar
+        datetime timestamp
+    }
+
+    ratings {
+        string user_id FK
+        string car_id FK
+        integer rating
+        string komentar
+        datetime timestamp
+    }

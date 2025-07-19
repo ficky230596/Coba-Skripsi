@@ -1,0 +1,178 @@
+{% extends 'main/main_layout.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
+    integrity="sha512-tS3S5qG0BlhnQROyJXvNjeEM4UpMXHrQfTGmbQ1gKmelCxlSEBUaxhRBj/EFTzpbP4RVSrpEikbmdJobCvhE3g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.css"
+    integrity="sha512-OTcub78R3msOCtY3Tc6FzeDJ8N9qvQn1Ph49ou13xgA9VsH9+LRxoFU6EqLhW4+PKRfU+/HReXmSZXHEkpYoOA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/home_page.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='icon/icon.css') }}">
+<style>
+    /* CSS untuk tata letak pencarian */
+    .search-form-container {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"
+    integrity="sha512-bPs7Ae6pVvhOSiIcyUClR7/q2OAsRiovw4vAkX+zJbw3ShAeeqezq50RIIcIURq7Oa20rW2n2q+fyXBNcU9lrw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{{ url_for('static', filename='js/main/home_page.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<section class="main-section mb-4">
+    <div class="text-content">
+        <h1>Selamat datang di Rental Mobil Manado</h1>
+        <p class="fs-6">Kami adalah perusahaan penyewaan mobil yang berkomitmen untuk memberikan layanan berkualitas
+            tinggi dengan harga yang terjangkau. Dengan pengalaman bertahun-tahun di industri ini, kami memahami
+            pentingnya kenyamanan dan keandalan dalam setiap perjalanan Anda</p>
+        <button class="btn" onclick="scrollToCarList()">Get Started</button>
+    </div>
+    <div class="image-content">
+        <img src="../../static/Gambar/a.png" alt="Image Placeholder">
+    </div>
+</section>
+
+<section class="about-section mb-4 d-flex justify-content-center">
+    <div class="text-center w-100">
+        <h2 class="fs-2 mb-3 text-primary">Mengapa memilih kita ?</h2>
+        <div class="row row-cols-3 gx-3">
+            <div class="col">
+                <div class="rounded p-3 item shadow">
+                    <img src="{{ url_for('static', filename='icon/believe.png') }}" alt=""
+                        style="height: 4rem; width:4rem;">
+                    <h4 class=" unrated">Kepercayaan</h4>
+                    <p class="text-justify">Banyak dari pelanggan kami adalah pelanggan setia yang terus kembali
+                        menggunakan layanan kami.</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="rounded p-3 item shadow">
+                    <img src="{{ url_for('static', filename='icon/fast.png') }}" alt=""
+                        style="height: 4rem; width:4rem;">
+                    <h4 class="text-primary">Mudah dan cepat</h4>
+                    <p class="text-justify">Pemesanan begitu mudah dilakukan karena prosesnya tidak kompleks dan sangat
+                        ramah pengguna, memastikan pengalaman yang lancar.</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="rounded p-3 item shadow">
+                    <img src="{{ url_for('static', filename='icon/Vector.png') }}" alt=""
+                        style="height: 4rem; width:4rem;">
+                    <h4 class="text-primary">Fleksibel</h4>
+                    <p class="text-justify">Penyewaan yang fleksibel sesuai dengan kebutuhan Anda, baik untuk perjalanan
+                        singkat maupun jangka panjang.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="flow-section">
+    <div class="text-center border p-5 rounded cont">
+        <h2 class="fs-2 mb-4 pb-3">Bagaimana Memulainya?</h2>
+        <div class="row row-cols-4 gx-3">
+            <div class="col">
+                <div class="col-item rounded shadow position-relative">
+                    <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">1</div>
+                    <h4 class="title-number">Login</h4>
+                    <div class="text-center p-2">Sebelum memesan login terlebih dahulu atau mendaftar</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="col-item rounded shadow position-relative">
+                    <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">2</div>
+                    <h4 class="title-number">Pilih Mobil</h4>
+                    <div class="text-center p-2">Pilih mobil yang ingin anda rental</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="col-item rounded shadow position-relative">
+                    <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">3</div>
+                    <h4 class="title-number">Bayar</h4>
+                    <div class="text-center p-2">Setelah memilih mobil anda akan di arahkan ke pembayaran</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="col-item rounded shadow position-relative">
+                    <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">4</div>
+                    <h4 class="title-number">Datang ke kantor</h4>
+                    <div class="text-center p-2">Datang ke kantor untuk menyerahkan bukti pembayaran dan KTP setelah itu
+                        mobil siap digunakan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="car-list-section" id="list-mobil">
+    <!-- Bagian Pencarian -->
+    <div class="search-form-container">
+        <form id="search-form">
+            <div class="row">
+                <div class="col">
+                    <input type="text" class="form-control" name="search"
+                        placeholder="Cari mobil (merek, tipe, seat, bahan bakar, transmisi, harga)">
+                </div>
+                <div class="col-auto">
+
+                    <button type="button" class="btn btn-secondary" id="cancel-search">Batal</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <h2 class="mb-3 text-primary">List Mobil</h2>
+    <div class="car-list owl-carousel">
+        {% for dt in data %}
+        <div class="card border-1 rounded-4 overflow-hidden">
+            <img src="{{ url_for('static', filename='Gambar/') }}{{dt.gambar}}" alt="{{dt.gambar}}" id="gambar_mobil"
+                class="card-img-top">
+            <div class="card-body">
+                <h3 class="mb-2 text-primary">{{dt.merek}} {{ dt.type_mobil }}</h3>
+                <div class="car-info d-flex justify-content-between align-items-center">
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="eicon-seat pe-2 fs-5"></i>
+                        <span>{{dt.seat}}</span>
+                    </div>
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
+                        <span>{{dt.bahan_bakar}}</span>
+                    </div>
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="eicon-transmission pe-2 fs-5"></i>
+                        <span>{{dt.transmisi}}</span>
+                    </div>
+                </div>
+                <div class="border-top mt-3 py-3">
+                    <div class="row">
+                        <div class="col">Harga</div>
+                        <div class="col-auto"><span data-target="currency">{{dt.harga}}</span>/ Hari</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mt-2">
+                    <span class="me-2">Rating:</span>
+                    <div id="rating-stars"></div>
+                    <span id="current-rating" class="ms-2">0/5</span>
+                </div>
+                <div class="d-flex mt-2">
+                    <span class="me-2">Komentar:</span>
+                    <div id="comment" class="m-0"></div>
+                </div>
+                <div class="d-flex">
+                    <a class="btn car-btn btn-primary m-auto w-100 rounded-5"
+                        href="/detail-mobil?id={{dt.id_mobil or dt._id}}">Detail</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

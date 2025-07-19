@@ -1,0 +1,154 @@
+{% extends 'main/main_layout.html' %}
+{% block title %}| Transaksi{% endblock %}
+
+{% block js %}
+<!-- Tambahkan SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Pastikan jQuery dimuat sebelum transaction.js -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Tambahkan toastr jika belum ada -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="{{ url_for('static', filename='js/main/transaction.js') }}"></script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/transaksi.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="transaction-section">
+    <div id="payment-alert" class="alert alert-danger d-none" role="alert"></div>
+
+    <!-- Kontainer tabel -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th scope="col">Tanggal</th>
+                    <th scope="col">Nama Mobil</th>
+                    <th scope="col">Tipe Mobil</th>
+                    <th scope="col">Bahan Bakar</th>
+                    <th scope="col">Lama Sewa</th>
+                    <th scope="col">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dt in data %}
+                <tr data-bs-toggle="modal" data-bs-target="#modal-{{dt._id}}" id="{{dt.order_id}}"
+                    class="transaksi-{{dt.status | lower | replace(' ', '-')}}">
+                    <td data-label="Tanggal">{{ dt.date_rent }}</td>
+                    <td data-label="Nama Mobil">{{ dt.item }}</td>
+                    <td data-label="Tipe Mobil">{{ dt.type_mobil }}</td>
+                    <td data-label="Bahan Bakar">{{ dt.bahan_bakar }}</td>
+                    <td data-label="Lama Sewa">{{ dt.lama_rental }}</td>
+                    <td data-label="Total" data-target="currency">{{ dt.total }}</td>
+                </tr>
+
+                <!-- Modal Detail Transaksi -->
+                <div class="modal fade" id="modal-{{dt._id}}" data-bs-backdrop="static" data-bs-keyboard="false"
+                    tabindex="-1" aria-labelledby="staticBackdropLabel-{{dt._id}}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="staticBackdropLabel-{{dt._id}}">Detail Transaksi</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div id="rental-modal" class="modal-body">
+                                <ul class="list-unstyled">
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Merek</span>
+                                        <span class="value">{{ dt.item }} {{ dt.transmisi }} {{ dt.plat }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Tipe Mobil / Seat</span>
+                                        <span class="value">{{ dt.type_mobil }}, Seat {{ dt.seat }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Bahan Bakar</span>
+                                        <span class="value">{{ dt.bahan_bakar }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Tanggal Sewa</span>
+                                        <span class="value">{{ dt.date_rent }} {{ dt.time_rent }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Tanggal Kembali</span>
+                                        <span class="value">
+                                            {% if dt.status == 'canceled' %}
+                                            - <!-- Tampilkan kosong untuk transaksi yang dibatalkan -->
+                                            {% elif dt.actual_return_date %}
+                                            {{ dt.actual_return_date }} {{ dt.actual_return_time }} {{
+                                            dt.status_pengembalian | default('') }}
+                                            {% else %}
+                                            Belum dikembalikan
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Batas</span>
+                                        <span class="value">{{ dt.end_rent }} {{ dt.end_time }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Sopir</span>
+                                        <span class="value">
+                                            {% if dt.biaya_sopir > 0 %}
+                                            Ya (Rp {{ dt.biaya_sopir | int }})
+                                            {% else %}
+                                            Tidak
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Lama Sewa</span>
+                                        <span class="value">{{ dt.lama_rental }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Total</span>
+                                        <span class="value" data-target="currency">{{ dt.total }}</span>
+                                    </li>
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Status</span>
+                                        <span class="value">{{ dt.status }}</span>
+                                    </li>
+                                    {% if dt.status == 'unpaid' %}
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Batas Waktu Pembayaran</span>
+                                        <span class="value" id="countdown-{{dt.order_id}}">10 menit dari pembuatan
+                                            transaksi</span>
+                                    </li>
+                                    {% endif %}
+                                    {% if dt.pesan %}
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Alasan</span>
+                                        <span class="value">{{ dt.pesan }}</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+
+                            {% if dt.status == 'unpaid' %}
+                            <div class="modal-footer">
+                                <a href="/transaksi/{{ dt.order_id }}" class="btn btn-primary">Bayar</a>
+                                <button type="button" class="btn btn-danger cancel-button"
+                                    data-order-id="{{ dt.order_id }}">
+                                    <img src="{{ url_for('static', filename='icon/loading.gif') }}" alt="Loading"
+                                        class="loading-icon d-none">
+                                    <span>Batalkan</span>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">Tidak ada transaksi</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

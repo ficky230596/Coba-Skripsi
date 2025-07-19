@@ -1,0 +1,224 @@
+/* Styling umum untuk section */
+.transaction-section {
+    min-height: 50vh;
+    padding: 2rem 1.5rem;
+    font-family: 'Inter', 'Arial', sans-serif; /* Font modern */
+    background-color: #f9f9f9; /* Latar belakang lembut */
+}
+
+/* Styling tabel */
+.table {
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+    padding: 12px 16px;
+    text-align: left;
+    border: none;
+}
+
+.table-primary {
+    background-color: #007bff;
+    color: #fff;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #e9ecef;
+    transition: background-color 0.3s ease;
+}
+
+[data-target="currency"] {
+    font-weight: 600;
+    color: #28a745;
+}
+
+/* Warna berdasarkan status transaksi */
+.transaksi-unpaid {
+    background-color: #fff3cd !important; /* Kuning untuk unpaid */
+}
+
+.transaksi-canceled,
+.transaksi-dibatalkan,
+.transaksi-dibatalkan-sendiri {
+    background-color: #f8d7da !important; /* Merah untuk canceled, dibatalkan, dan dibatalkan sendiri */
+}
+
+/* Styling modal */
+#rental-modal .modal-body {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+#rental-modal ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#rental-modal li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    background: #fff;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#rental-modal .label {
+    font-weight: 600;
+    color: #007bff;
+    width: 160px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+#rental-modal .value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+    flex: 1;
+}
+
+/* Modal footer */
+.modal-footer .btn {
+    width: 120px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    border-radius: 6px;
+}
+
+.modal-footer .loading-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* Media Queries untuk responsivitas */
+@media (max-width: 768px) {
+    .transaction-section {
+        padding: 1.5rem 1rem;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 10px 12px;
+    }
+
+    #rental-modal .label {
+        width: 140px;
+        font-size: 0.85rem;
+    }
+
+    #rental-modal .value {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .transaction-section {
+        padding: 1rem 0.5rem;
+    }
+
+    .table {
+        font-size: 0.85rem;
+        border: none;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .table thead {
+        display: none; /* Sembunyikan header di mobile */
+    }
+
+    .table tbody tr {
+        display: block;
+        margin-bottom: 1.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 0.85rem;
+    }
+
+    .table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody td:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #007bff;
+        width: 40%;
+        flex-shrink: 0;
+    }
+
+    #rental-modal .modal-body {
+        padding: 1rem;
+    }
+
+    #rental-modal .label {
+        width: 120px;
+        font-size: 0.8rem;
+    }
+
+    #rental-modal .value {
+        font-size: 0.8rem;
+    }
+
+    #rental-modal li {
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+        max-width: 180px;
+    }
+}
+
+/* Styling modal umum */
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-body {
+    font-size: 0.9rem;
+    color: #333;
+    background: #fff;
+    padding: 1.5rem;
+}

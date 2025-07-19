@@ -1,0 +1,198 @@
+body {
+    background-color: #dbdee7;
+    font-family: 'Arial', sans-serif;
+}
+
+.page-container {
+    padding: 1rem 0;
+    width: 100%;
+    max-width: 1200px; /* Contoh batasan lebar */
+    margin: 0 auto; /* Untuk memusatkan */
+}
+
+.user-card-full {
+    overflow: hidden;
+    border-radius: 5px;
+    box-shadow: 0 1px 20px 0 rgba(69, 90, 100, 0.08);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-block {
+    padding: 1.5rem;
+}
+
+/* Profil pengguna */
+.user-profile {
+    border-radius: 5px 5px 0 0;
+    padding: 1.5rem 0;
+    background: linear-gradient(to right, #5a90ee, #63d8f2);
+}
+
+.img-radius {
+    border-radius: 5px;
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+}
+
+h6 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.f-w-600 {
+    font-weight: 600;
+}
+
+.text-muted {
+    color: #096ed3 !important;
+}
+
+.b-b-default {
+    border-bottom: 1px solid #096ed3;
+}
+
+/* Detail profil */
+.m-b-10 {
+    margin-bottom: 0.5rem;
+}
+
+.m-t-40 {
+    margin-top: 2rem;
+}
+
+.card-block p {
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* Foto SIM */
+#ktpSimImage {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Loading spinner */
+#loadingSpinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 8px;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.form-control {
+    font-size: 0.9rem;
+}
+
+#saveChanges {
+    margin-top: 1rem;
+}
+
+/* Media Queries untuk responsivitas */
+@media (max-width: 767px) {
+    .page-container {
+        padding: 0.5rem;
+    }
+
+    .user-card-full {
+        margin-bottom: 1rem;
+    }
+
+    .user-profile {
+        border-radius: 5px 5px 0 0;
+        padding: 1rem 0;
+    }
+
+    .img-radius {
+        width: 100px;
+        height: 100px;
+    }
+
+    .card-block {
+        padding: 1rem;
+    }
+
+    h6 {
+        font-size: 1rem;
+    }
+
+    .card-block p {
+        font-size: 0.85rem;
+    }
+
+    /* Tumpuk kolom di mobile */
+    .col-md-4,
+    .col-md-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .form-control {
+        font-size: 0.85rem;
+    }
+
+    #saveChanges {
+        height: 45px;
+        font-size: 0.9rem;
+    }
+
+    #profileImagePreview,
+    #simImagePreview {
+        max-width: 80px;
+        max-height: 80px;
+    }
+}
+
+@media (max-width: 576px) {
+    .img-radius {
+        width: 80px;
+        height: 80px;
+    }
+
+    h6 {
+        font-size: 0.9rem;
+    }
+
+    .card-block p {
+        font-size: 0.8rem;
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+}

@@ -1,0 +1,89 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/tampilan.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
+    integrity="sha512-tS3S5qG0BlhnQROyJXvNjeEM4UpMXHrQfTGmbQ1gKmelCxlSEBUaxhRBj/EFTzpbP4RVSrpEikbmdJobCvhE3g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+{% block javascript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"
+    integrity="sha512-bPs7Ae6pVvhOSiIcyUClR7/q2OAsRiovw4vAkX+zJbw3ShAeeqezq50RIIcIURq7Oa20rW2n2q+fyXBNcU9lrw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script type="module" src="{{ url_for('static', filename='js/dashboard/dashboard.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="title-dashboard py-3">
+    <h2 class="text-primary">Dashboard</h2>
+</div>
+
+<div class="dashboard-content">
+    <div class="head mb-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+            <div class="col">
+                <a href="/data_mobil" class="link text-decoration-none">
+                    <div class="rounded-4 bg-white p-3 shadow-sm position-relative" id="jumlah_item">
+                        <h5 class="text-primary mb-2">Jumlah Mobil</h5>
+                        <span class="fs-4">{{jumlah_mobil}}</span>
+                        <div id="icon_jumlah"><i class="fa-solid fa-car"></i></div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="/transaction" class="link text-decoration-none">
+                    <div class="rounded-4 bg-white p-3 shadow-sm position-relative" id="jumlah_item">
+                        <h5 class="text-primary mb-2">Jumlah Transaksi</h5>
+                        <span class="fs-4">{{jumlah_transaksi}}</span>
+                        <div id="icon_jumlah"><i class="fa-solid fa-cart-arrow-down"></i></div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <div class="rounded-4 bg-white p-3 shadow-sm position-relative" id="jumlah_item" role="button">
+                    <h5 class="text-primary mb-2">Pendapatan Tahun Ini</h5>
+                    <span class="fs-4" data-target="currency">{{total_transaksi}}</span>
+                    <div id="icon_jumlah"><i class="fa-solid fa-wallet"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <div class="p-4 shadow rounded-4 bg-white h-100">
+                <div class="row g-3 align-items-center mb-4">
+                    <div class="col">
+                        <h5 class="text-primary">Grafik Pendapatan</h5>
+                    </div>
+                    <div class="col-auto">
+                        Total: <span data-target="currency" id="totalPendapatan">200000</span>
+                    </div>
+                    <div class="col-auto">
+                        <select class="form-select" id="filtercart">
+                            {% for tahun in tahun_transaksi|reverse %}
+                            <option value="{{tahun}}">{{tahun}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-cont" style="min-height: 300px;">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="p-4 shadow rounded-4 bg-white h-100">
+                <h5 class="text-primary mb-3">Grafik Transaksi</h5>
+                <div class="chart-cont" style="min-height: 300px;">
+                    <canvas id="piechart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

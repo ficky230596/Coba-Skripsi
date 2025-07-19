@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Email</title>
+    <style>
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #007bff;
+            color: white;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #f6f6f6;
+            color: #999999;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Verifikasi Email Anda</h1>
+        </div>
+        <div class="content">
+            <p>Halo,</p>
+            <p>Terima kasih telah mendaftar. Berikut adalah kode verifikasi Anda:</p>
+            <h2>{{ kode }}</h2>
+            <p>Silakan masukkan kode ini di halaman verifikasi untuk mengaktifkan akun Anda.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2024 Perusahaan Anda. Semua hak dilindungi.</p>
+        </div>
+    </div>
+</body>
+</html>

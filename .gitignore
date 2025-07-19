@@ -1,0 +1,7 @@
+venv
+__pycache__
+
+.env
+tutor push.txt
+
+Hoasting_rental_Mobil/

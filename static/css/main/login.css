@@ -1,0 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap');
+
+body {
+    font-family: "League Spartan", sans-serif;
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(135deg, #1b1bb3 0%, #4b4bff 30%, #f8f9fa 100%);
+    padding: 1rem;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Logo */
+.brand-logo {
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.brand-logo img {
+    max-width: 90%;
+    height: auto;
+}
+
+/* Kontainer Form */
+.container {
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.brand-logo2 {
+    display: none; /* Sembunyikan pada desktop */
+}
+
+.brand-logo2 img {
+    max-width: 120px; /* Default untuk mobile, sesuai reset password */
+    height: auto;
+}
+
+.form-container {
+    display: none;
+    width: 100%;
+    max-width: 500px;
+    background-color: rgba(255, 255, 255, 0.325);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    border-radius: 1rem;
+}
+
+.form-container.active {
+    display: block;
+}
+
+.form-title {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+.brand {
+    color: #1b1bb3;
+}
+
+/* Form Group */
+.form-group label {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    height: 2.5rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+}
+
+.form-control:focus {
+    border-color: #1b1bb3;
+    box-shadow: 0 0 5px rgba(27, 27, 179, 0.3);
+}
+
+.btn-primary {
+    height: 2.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    background-color: #1b1bb3;
+    border-color: #1b1bb3;
+}
+
+.btn-primary:hover {
+    background-color: #151593;
+    border-color: #151593;
+}
+
+/* Status validasi */
+#username_status,
+#email_status,
+#pw_status,
+#phone_status,
+#name_status,
+#image_status {
+    font-size: 0.85rem;
+    color: #dc3545;
+}
+
+/* Link */
+.text-primary {
+    color: #1b1bb3 !important;
+    cursor: pointer;
+}
+
+.text-primary:hover {
+    color: #151593 !important;
+}
+
+/* Alert */
+.alert {
+    font-size: 0.9rem;
+    padding: 0.75rem;
+}
+
+/* Media Queries untuk responsivitas */
+@media (max-width: 1000px) {
+    .brand-logo {
+        display: none;
+    }
+
+    .container {
+        width: 100%;
+        padding: 0 1rem;
+    }
+
+    .form-container {
+        max-width: 100%;
+        padding: 1.5rem;
+    }
+
+    .brand-logo2 {
+        display: flex; /* Tampilkan pada mobile */
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem; /* Jarak bawah untuk mobile */
+    }
+
+    .brand-logo2 img {
+        max-width: 120px; /* Sesuai reset password pada mobile */
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .form-title {
+        font-size: 1.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.95rem;
+    }
+
+    .form-control {
+        height: 2.25rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        height: 2.25rem;
+        font-size: 0.9rem;
+    }
+
+    .form-container {
+        padding: 1rem;
+    }
+
+    .alert {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    #username_status,
+    #email_status,
+    #pw_status,
+    #phone_status,
+    #name_status,
+    #image_status {
+        font-size: 0.8rem;
+    }
+
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    p.m-0 {
+        font-size: 0.9rem;
+    }
+
+    .brand-logo2 img {
+        max-width: 100px; /* Lebih kecil untuk layar sangat kecil */
+    }
+}
+
+.brand {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.brand:hover {
+    text-decoration: underline;
+}
+
+.password-wrapper {
+    position: relative;
+}
+.password-wrapper .form-control {
+    padding-right: 40px; /* Memberi ruang untuk ikon */
+}
+.password-wrapper .bi {
+    font-size: 1.2rem;
+    color: #6c757d; /* Warna ikon sesuai tema Bootstrap */
+}
+.password-wrapper .bi:hover {
+    color: #000; /* Warna saat hover untuk interaktivitas */
+}

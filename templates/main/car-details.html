@@ -1,0 +1,345 @@
+{% extends 'main/main_layout.html' %}
+{% block title %}| Detail - {{ data.merek }} {% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
+    integrity="sha512-tS3S5qG0BlhnQROyJXvNjeEM4UpMXHrQfTGmbQ1gKmelCxlSEBUaxhRBj/EFTzpbP4RVSrpEikbmdJobCvhE3g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.css"
+    integrity="sha512-OTcub78R3msOCtY3Tc6FzeDJ8N9qvQn1Ph49ou13xgA9VsH9+LRxoFU6EqLhW4+PKRfU+/HReXmSZXHEkpYoOA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/home_page.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='icon/icon.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/car_details.css') }}">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
+{% block js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/main/maps.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"
+    integrity="sha512-bPs7Ae6pVvhOSiIcyUClR7/q2OAsRiovw4vAkX+zJbw3ShAeeqezq50RIIcIURq7Oa20rW2n2q+fyXBNcU9lrw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{{ url_for('static', filename='js/main/car_details.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main/rating.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main/home_page.js') }}"></script>
+
+<style>
+    .spinner {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+        z-index: 1050;
+        /* Di atas modal Bootstrap */
+    }
+
+    @keyframes spin {
+        0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+        }
+
+        100% {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
+    }
+
+    .loading-message {
+        display: none;
+        position: fixed;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1050;
+    }
+
+    .error {
+        color: red;
+    }
+
+    .success {
+        color: green;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <img src="{{ url_for('static', filename='Gambar/' + data.gambar) }}" alt="Car Image"
+                        class="img-fluid rounded" style="object-fit: cover; height: 100%;">
+                </div>
+                <div class="col-md-6">
+                    <h3 class="mb-3">{{ data.merek }}</h3>
+                    <div class="d-flex align-items-center mt-2">
+                        <span class="me-2">Rating:</span>
+                        <div class="d-flex">
+                            <div id="rating-stars">
+                                <!-- Stars will be populated by AJAX -->
+                            </div>
+                        </div>
+                        <span id="current-rating" class="ms-2">0/5</span>
+                    </div>
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Type</th>
+                                <td>{{ data.type_mobil }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Bahan Bakar</th>
+                                <td>{{ data.bahan_bakar }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Transmisi</th>
+                                <td>{{ data.transmisi }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Seat</th>
+                                <td>{{ data.seat }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Harga</th>
+                                <td>Rp {{ data.harga }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td>{{ data.status }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- <p class="mt-4">Audi adalah mobil mewah dengan performa tinggi dan fitur-fitur canggih yang
+                        menawarkan kenyamanan serta keamanan bagi pengemudi dan penumpangnya.</p> -->
+                    <div class="text-center mt-4">
+                        {% if data.status == 'Tersedia' and user_info %}
+                        <a href="#" class="btn btn-success" data-bs-toggle="modal"
+                            data-bs-target="#rentalModal">Rental</a>
+                        {% elif not user_info %}
+                        <a href="{{ url_for('login') }}" class="btn btn-warning">Login untuk Rental</a>
+                        {% else %}
+                        <button class="btn btn-secondary" disabled>Tidak Tersedia</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Tambahkan elemen spinner dan pesan loading -->
+<div id="spinner" class="spinner"></div>
+<div id="loading-message" class="loading-message">
+    Memeriksa ketersediaan mobil, mohon tunggu... <span id="countdown"></span>
+</div>
+<!-- Rental Modal -->
+<div class="modal fade" id="rentalModal" tabindex="-1" role="dialog" aria-labelledby="rentalModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rentalModalLabel">{{ data.merek }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="hari" class="form-label">Masukkan jumlah hari rental</label>
+                        <input type="number" name="hari" id="hari" class="form-control" min="1" required>
+                        <input type="hidden" id="harga_per_hari" value="{{ data.harga }}">
+                    </div>
+                    <label>
+                        <input type="checkbox" id="gunakan_sopir"> Gunakan Sopir (Rp 100.000/hari)
+                    </label>
+                    <div id="maps-css">
+                        <div>
+                            <a href="#" class="btn btn-primary" data-url="{{ url_for('maps') }}"
+                                onclick="openMapPopup(event)">Lihat Peta</a>
+                        </div>
+                        <label id="delivery-info" style="display: none;">
+                            <input id="delivery-distance" placeholder="Jarak Pengantaran" readonly class="form-control"
+                                min="1" required>
+                            <input id="delivery-location" placeholder="Lokasi" readonly class="form-control" min="1"
+                                required>
+                            <input id="delivery-cost" placeholder="Biaya Pengantaran" readonly class="form-control"
+                                min="1" required>
+                            <!-- Tombol Batal -->
+                            <button type="button" class="btn btn-danger mt-2" id="cancel-button"
+                                onclick="resetDeliveryInfo()">Batal</button>
+                            <div id="use-delivery" style="display: none;">
+                                <label></label>
+                            </div>
+                            <input type="checkbox" id="gunakan_pengantaran"> Gunakan Pengantaran
+                        </label>
+                    </div>
+                    <div id="total_price" class="mb-3 bold-text spacing">
+                        Total Harga: Rp 0
+                    </div>
+                    <div class="modal-body">
+                        <p>Berikut adalah syarat dan ketentuan untuk menyewa mobil:</p>
+                        <ul>
+                            <li>Penyewa harus memiliki SIM yang masih berlaku.</li>
+                            <li>Mobil harus dikembalikan dalam kondisi yang sama seperti saat disewa.</li>
+                            <li>Biaya tambahan akan dikenakan untuk keterlambatan pengembalian.</li>
+                            <li>Penyewa bertanggung jawab atas segala kerusakan yang terjadi selama masa sewa.</li>
+                            <li>Penyewa tidak diizinkan untuk mengalihkan penyewaan kepada pihak ketiga tanpa
+                                persetujuan.</li>
+                        </ul>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="agree_terms">
+                        <label class="form-check-label" for="agree_terms">Saya setuju dengan <a href="#"
+                                data-bs-toggle="modal" data-bs-target="#termsModal">syarat dan ketentuan</a></label>
+                    </div>
+                </form>
+                <!-- Modal Peta -->
+                <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <!-- <h5 class="modal-title" id="mapModalLabel">Pilih Lokasi Pengantaran Mobil</h5> -->
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-flex mb-2">
+                                    <input type="text" id="pac-input" class="form-control me-2"
+                                        placeholder="Cari lokasi">
+                                    <button class="btn btn-secondary" onclick="findMyLocation()">Lokasi Saya
+                                        Saya</button>
+                                </div>
+                                <div id="mapFrame" style="width: 100%; height: 500px;"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="closeMapModal()">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                {% if user_info %}
+                <!-- Button Pemesanan -->
+                <button type="button" class="btn btn-primary" id="btn_pesan"
+                    onclick="showPasswordVerificationModal('{{ data.id_mobil }}', '{{ user_info.user_id }}')"
+                    disabled>Pesan</button>
+                {% endif %}
+            </div>
+            <!-- Modal Verifikasi Password -->
+            <div class="modal fade" id="passwordVerificationModal" tabindex="-1"
+                aria-labelledby="passwordVerificationModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="passwordVerificationForm">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="passwordVerificationModalLabel">Verifikasi Kata Sandi</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="password">Masukkan Kata Sandi Anda</label>
+                                    <input type="password" class="form-control" id="password" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn btn-primary">Verifikasi</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Syarat dan Ketentuan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Berikut adalah syarat dan ketentuan untuk menyewa mobil:</p>
+                <ul>
+                    <li>Penyewa harus memiliki SIM yang masih berlaku.</li>
+                    <li>Mobil harus dikembalikan dalam kondisi yang sama seperti saat disewa.</li>
+                    <li>Biaya tambahan akan dikenakan untuk keterlambatan pengembalian.</li>
+                    <li>Penyewa bertanggung jawab atas segala kerusakan yang terjadi selama masa sewa.</li>
+                    <li>Penyewa tidak diizinkan untuk mengalihkan penyewaan kepada pihak ketiga tanpa persetujuan.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="car-list-section" id="list-mobil">
+    <h2 class="mb-3 text-primary">List Mobil</h2>
+    <div class="car-list owl-carousel">
+        {% for dt in data_mobil %}
+        <div class="card border-1 rounded-4 overflow-hidden">
+            <img src="{{ url_for('static', filename='Gambar/') }}{{dt.gambar}}" alt="{{dt.gambar}}" id="gambar_mobil"
+                class="card-img-top">
+            <div class="card-body">
+                <h3 class="mb-2 text-primary">{{dt.merek}} {{ dt.type_mobil }}</h3>
+                <div class="car-info d-flex justify-content-between align-items-center">
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="eicon-seat pe-2 fs-5"></i>
+                        <span>{{dt.seat}}</span>
+                    </div>
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
+                        <span>{{dt.bahan_bakar}}</span>
+                    </div>
+                    <div class="car-info-item d-flex align-items-center">
+                        <i class="eicon-transmission pe-2 fs-5"></i>
+                        <span>{{dt.transmisi}}</span>
+                    </div>
+                </div>
+                <div class="border-top mt-3 py-3">
+                    <div class="row">
+                        <div class="col">Harga</div>
+                        <div class="col-auto"><span data-target="currency">{{dt.harga}}</span>/ Hari</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mt-2">
+                    <span class="me-2">Rating:</span>
+                    <div id="rating-stars"></div>
+                    <span id="current-rating" class="ms-2">0/5</span>
+                </div>
+                <div class="d-flex mt-2">
+                    <span class="me-2">Komentar:</span>
+                    <p id="comment" class="m-0">Belum ada komentar.</p>
+                </div>
+                <div id="most-frequent-rating" class="mt-2"></div>
+                <div class="d-flex">
+                    <a class="btn car-btn btn-primary m-auto w-100 rounded-5"
+                        href="/detail-mobil?id={{dt.id_mobil or dt._id}}">Detail</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

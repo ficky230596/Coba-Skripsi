@@ -1,0 +1,184 @@
+{% extends 'main/main_layout.html' %}
+
+{% block title %} | Setting {% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ url_for('static', filename='js/main/profile.js') }}"></script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/profil.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #007bff;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin: auto;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .password-container {
+        position: relative;
+    }
+    .password-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+    }
+    .status-message {
+        font-size: 0.9em;
+        margin-top: 5px;
+        display: block;
+    }
+    .status-available { color: green; }
+    .status-unavailable { color: red; }
+    .status-invalid { color: orange; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content page-container" id="page-content">
+    <div class="py-4">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card user-card-full">
+                    <div class="row g-0">
+                        <div class="col-md-4 bg-c-lite-green user-profile text-center text-white">
+                            <div class="card-block py-4">
+                                <div class="mb-3">
+                                    <img src="{{ user_info['profile_image_path'] | default(url_for('static', filename='icon/user.jpg')) }}"
+                                         class="img-radius" id="profileImage" alt="Foto Profil">
+                                </div>
+                                <h6 class="f-w-600 mb-2">Nama: {{ user_info['username'] }}</h6>
+                                <button class="btn btn-link text-white p-0" data-bs-toggle="modal" data-bs-target="#editModal">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-block py-4">
+                                <h6 class="mb-3 pb-2 b-b-default f-w-600">
+                                    <i class="fa-regular fa-id-card"></i> Selamat Datang Di Halaman Profil
+                                </h6>
+                                <div class="row mb-4">
+                                    <div class="col-12 col-sm-6 mb-3">
+                                        <p class="mb-1 f-w-600">
+                                            <i class="fa-solid fa-envelope"></i> Email
+                                        </p>
+                                        <h6 class="text-muted f-w-400" id="email">{{ user_info['email'] }}</h6>
+                                    </div>
+                                    <div class="col-12 col-sm-6 mb-3">
+                                        <p class="mb-1 f-w-600">
+                                            <i class="fa-solid fa-mobile-screen-button"></i> No Telpon
+                                        </p>
+                                        <h6 class="text-muted f-w-400" id="phone">{{ user_info['phone'] }}</h6>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-sm-6 mb-3">
+                                        <p class="mb-1 f-w-600">
+                                            <i class="fa-solid fa-map-location"></i> Alamat
+                                        </p>
+                                        <h6 class="text-muted f-w-400" id="address">{{ user_info['address'] }}</h6>
+                                    </div>
+                                    <div class="col-12 col-sm-6 mb-3">
+                                        <p class="mb-1 f-w-600">Nama Lengkap</p>
+                                        <h6 class="text-muted f-w-400" id="name">{{ user_info['name'] }}</h6>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <p class="mb-1 f-w-600">
+                                            <i class="fa-solid fa-id-card"></i> Foto SIM
+                                        </p>
+                                        <button onclick="showImage()" class="btn btn-primary mb-2">Tampilkan Foto SIM</button>
+                                        <img id="ktpSimImage"
+                                             src="{{ url_for('static', filename=user_info['image_path'].replace('static/', '')) }}"
+                                             alt="Foto SIM"
+                                             class="img-fluid" style="display: none; margin-top: 10px;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Profil -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Profil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Nama Pengguna</label>
+                        <input type="text" class="form-control" id="editName" value="{{ user_info['username'] }}">
+                        <span id="usernameStatus" class="status-message"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" autocomplete="username" class="form-control" id="editEmail" value="{{ user_info['email'] }}">
+                        <span id="emailStatus" class="status-message"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label">No Telpon</label>
+                        <input type="tel" class="form-control" id="editPhone" value="{{ user_info['phone'] }}"
+                               pattern="[0-9]*" inputmode="numeric" placeholder="Masukkan nomor telepon">
+                        <span id="phoneStatus" class="status-message"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAddress" class="form-label">Alamat</label>
+                        <input type="text" class="form-control" id="editAddress" value="{{ user_info['address'] }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFullName" class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-control" id="editFullName" value="{{ user_info['name'] }}">
+                    </div>
+                    <div class="mb-3 password-container">
+                        <label for="oldPassword" class="form-label">Password Lama</label>
+                        <input type="password" autocomplete="new-password" class="form-control" id="oldPassword">
+                        <i class="fa fa-eye password-toggle" id="toggleOldPassword"></i>
+                    </div>
+                    <div class="mb-3 password-container">
+                        <label for="newPassword" class="form-label">Password Baru</label>
+                        <input type="password" autocomplete="new-password" class="form-control" id="newPassword">
+                        <i class="fa fa-eye password-toggle" id="toggleNewPassword"></i>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProfileImage" class="form-label">Foto Profil</label>
+                        <input type="file" class="form-control" id="editProfileImage" accept="image/*">
+                        <img id="profileImagePreview" class="img-fluid mt-2" style="max-width: 100px; max-height: 100px; display: none;" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSimImage" class="form-label">Foto SIM</label>
+                        <input type="file" class="form-control" id="editSimImage" accept="image/*">
+                        <img id="simImagePreview" class="img-fluid mt-2" style="max-width: 100px; max-height: 100px; display: none;" />
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="saveChanges" disabled>Simpan Perubahan</button>
+                    </div>
+                </form>
+                <div id="loadingSpinner" class="d-none text-center mt-3">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

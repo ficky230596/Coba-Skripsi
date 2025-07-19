@@ -1,0 +1,50 @@
+
+{% block title %}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        width: 100%;       /* Lebar penuh sesuai kontainer */
+        height: 60vh;      /* Tinggi 60% dari viewport height */
+        min-height: 200px; /* Minimal tinggi 400px agar tidak terlalu kecil */
+        border-radius: 8px; /* Membuat sudut sedikit melengkung */
+    }
+    @media (max-width: 768px) {
+        #map {
+            height: 50vh;  /* Sesuaikan tinggi peta agar tombol tidak tertutup */
+            min-height: 300px; /* Jaga agar tetap terlihat */
+        }
+    
+        .container {
+            padding-bottom: 80px; /* Tambahkan ruang di bawah untuk tombol */
+        }
+    
+        button {
+            width: 100%; /* Buat tombol full width agar lebih mudah ditekan */
+            margin-bottom: 10px; /* Beri jarak antar tombol */
+        }
+    }
+    
+    
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="map" style="width: 100%; height: 400px;"></div>
+<p id="user-location">Klik pada peta untuk menentukan lokasi pengantaran</p>
+<p>Jarak: <span id="distance">0 km</span></p>
+<p>Harga Pengantaran: <span id="cost">Rp 0</span></p>
+<button onclick="getUserLocation()">Gunakan Lokasi Saya</button>
+
+<button onclick="sendDeliveryData()">Simpan</button>
+
+<a id="open-maps" href="#" target="_blank" style="display: none; margin-left: 10px;">Buka di Google Maps</a>
+
+
+{% endblock %}
+
+{% block js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/main/maps.js') }}"></script>
+{% endblock %}

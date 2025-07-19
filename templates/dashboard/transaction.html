@@ -1,0 +1,166 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/transaction.css') }}">
+{% endblock %}
+
+{% block javascript %}
+<script type="module" src="{{ url_for('static', filename='js/dashboard/transaksi.js') }}"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="title-dashboard py-3">
+  <div class="row g-3 align-items-center">
+    <div class="col">
+      <h2 class="text-primary m-0">Transaksi</h2>
+    </div>
+    <div class="col-auto">
+      <a class="btn btn-primary" role="button" href="/transaction/add_transaction">Tambah Transaksi</a>
+    </div>
+    <div class="col-auto">
+      <select class="form-select" id="filter_transaksi">
+        <option value="" selected disabled hidden>Filter</option>
+        <option value="1">Tanggal Rental</option>
+        <option value="2">Sudah Bayar</option>
+        <option value="3">Dibatalkan</option>
+        <option value="4">Mobil Digunakan</option>
+      </select>
+    </div>
+    
+    <div class="col-auto" id="tanggal" hidden></div>
+  </div>
+</div>
+
+<div class="table_data py-4">
+  <table class="table table-bordered table-striped shadow-sm">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Mobil</th>
+        <th scope="col">Tipe Mobil</th>
+        <th scope="col">Plat</th>
+        <th scope="col">Penyewa</th>
+        <th scope="col">Lama Rental</th>
+        <th scope="col">Total</th>
+        <th scope="col">Tanggal Rental</th>
+        <th scope="col">Akhir Rental</th>
+        <th scope="col">Waktu Tersisa</th>
+        <th scope="col">Status</th>
+        <th scope="col">Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="list-data">
+      {% for dt in data %}
+      <tr data-order-id="{{ dt.order_id }}" data-item="{{ dt.item }}">
+        <td>{{ loop.index }}</td>
+        <td>{{ dt.item }}</td>
+        <td>{{ dt.type_mobil }}</td>
+        <td>{{ dt.plat }}</td>
+        <td>{{ dt.penyewa }}</td>
+        <td>{{ dt.lama_rental }}</td>
+        <td data-target="currency">{{ dt.total }}</td>
+        <td>{{ dt.date_rent }}</td>
+        <td>{{ dt.end_rent }}</td>
+        <td class="countdown" data-end-rent="{{ dt.end_rent }}" data-end-time="{{ dt.end_time }}"
+          data-status="{{ dt.status_mobil }}" data-return-status="{{ dt.status_pengembalian | default('') }}"
+          data-actual-return-date="{{ dt.actual_return_date | default('') }}"
+          data-actual-return-time="{{ dt.actual_return_time | default('') }}"></td>
+        <td id="status"><span class="status-badge status-badge-{{ dt.status_mobil }}">{{ dt.status }}</span></td>
+        <td>
+          <button class="btn btn-info btn-sm btn-detail" data-order-id="{{ dt.order_id }}">Detail</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="12" class="text-center">Tidak ada data yang tersedia.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal untuk Detail Transaksi -->
+<div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-labelledby="transactionDetailModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="transactionDetailModalLabel">Detail Transaksi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">Informasi Transaksi</h6>
+              </div>
+              <div class="card-body">
+                <p><strong>Order ID:</strong> <span id="modal-order-id" class="text-muted"></span></p>
+                <p><strong>Mobil:</strong> <span id="modal-item" class="text-muted"></span></p>
+                <p><strong>Tipe Mobil:</strong> <span id="modal-type-mobil" class="text-muted"></span></p>
+                <p><strong>Plat:</strong> <span id="modal-plat" class="text-muted"></span></p>
+                <p><strong>Penyewa:</strong> <span id="modal-penyewa" class="text-muted"></span></p>
+                <p><strong>Lama Rental:</strong> <span id="modal-lama-rental" class="text-muted"></span></p>
+                <p><strong>Total:</strong> <span id="modal-total" class="text-muted"></span></p>
+                <p><strong>Tanggal Rental:</strong> <span id="modal-date-rent" class="text-muted"></span></p>
+                <p><strong>Akhir Rental:</strong> <span id="modal-end-rent" class="text-muted"></span></p>
+                <p><strong>Waktu Tersisa:</strong> <span id="modal-countdown" data-return-status=""
+                    data-actual-return-date="" data-actual-return-time="" class="text-muted"></span></p>
+                <p><strong>Status:</strong> <span id="modal-status" class="text-muted"></span></p>
+                <p><strong>Biaya Sopir:</strong> <span id="modal-biaya-sopir" class="text-muted"></span></p>
+                <p><strong>Pengantaran:</strong> <span id="modal-gunakan-pengantaran" class="text-muted"></span></p>
+                <p><strong>Biaya Pengantaran:</strong> <span id="modal-delivery-cost" class="text-muted"></span></p>
+                <p><strong>Lokasi Pengantaran:</strong> <span id="modal-delivery-location" class="text-muted"></span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">Foto Penyewa</h6>
+              </div>
+              <div class="card-body text-center">
+                <div class="mb-3">
+                  <p class="mb-1"><strong>Foto Profil</strong></p>
+                  <img id="modal-profile-image" src="/static/icon/user.jpg" alt="Foto Profil"
+                    class="img-fluid img-thumbnail img-clickable" style="max-width: 150px; cursor: pointer;">
+                </div>
+                <div>
+                  <p class="mb-1"><strong>Foto SIM</strong></p>
+                  <img id="modal-sim-image" src="/static/icon/default_sim.png" alt="Foto SIM"
+                    class="img-fluid img-thumbnail img-clickable" style="max-width: 150px; cursor: pointer;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal untuk Memperbesar Foto -->
+<div class="modal fade" id="imageZoomModal" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="imageZoomModalLabel">Foto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="zoomed-image" src="" alt="Foto Zoom" class="img-fluid" style="max-width: 100%;">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

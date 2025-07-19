@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap');
+
+* {
+    font-family: "League Spartan", sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    margin-top: 5rem;
+    background-color: #f8f9fa;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 2rem;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    z-index: 1000;
+    height: 5rem;
+}
+
+.logo a {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #1b1bb3;
+    text-decoration: none;
+}
+
+.dropdown-center img {
+    height: 3rem;
+    width: 3rem;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.dropdown-menu {
+    min-width: 120px;
+}
+
+.footer {
+    background: rgb(1, 65, 159);
+    background: linear-gradient(0deg, rgba(1, 65, 159, 1) 0%, rgba(13, 110, 253, 1) 100%);
+    padding: 2rem 1rem;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.footer-content {
+    width: 33.3%;
+    color: #ffffff;
+    padding: 1rem;
+}
+
+.footer-content p {
+    margin: 0 auto;
+    padding: 7px;
+    font-size: 0.9rem;
+}
+
+.footer-content ul {
+    text-align: center;
+    padding: 0;
+}
+
+.list li {
+    list-style-type: none;
+    padding: 7px;
+    position: relative;
+}
+
+.list li::before {
+    content: '';
+    position: absolute;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 100%;
+    width: 0;
+    height: 2px;
+    background: #ffffff;
+    transition-duration: 0.5s;
+}
+
+.list li:hover::before {
+    width: 70px;
+}
+
+.social-icons {
+    text-align: center;
+    padding: 0;
+}
+
+.social-icons a {
+    display: inline-block;
+    padding: 5px;
+}
+
+.social-icons i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.social-icons i:hover {
+    color: #094d90;
+}
+
+.bottom-bar {
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 2rem;
+}
+
+.bottom-bar p {
+    color: rgb(255, 255, 255);
+    margin: 0;
+    font-size: 0.9rem;
+    padding: 7px;
+}
+
+a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+/* Media Queries untuk Responsivitas */
+
+/* Tablet (max-width: 768px) */
+@media (max-width: 768px) {
+    header {
+        padding: 10px 1.5rem;
+    }
+
+    .logo a {
+        font-size: 1.5rem;
+    }
+
+    .dropdown-center img {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+
+    .container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .footer-content {
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer-content p {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .social-icons i {
+        font-size: 1.2rem;
+    }
+}
+
+/* Mobile (max-width: 576px) */
+@media (max-width: 576px) {
+    header {
+        padding: 10px 1rem;
+        height: 4rem;
+    }
+
+    .logo a {
+        font-size: 1.2rem;
+    }
+
+    .dropdown-center img {
+        height: 2rem;
+        width: 2rem;
+    }
+
+    .dropdown-menu {
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
+
+    .footer {
+        padding: 1rem;
+    }
+
+    .footer-content {
+        padding: 0.5rem;
+    }
+
+    .footer-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .footer-content p,
+    .bottom-bar p {
+        font-size: 0.8rem;
+    }
+
+    .social-icons i {
+        font-size: 1rem;
+    }
+
+    .px-10 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Floating WhatsApp Button */
+.whatsapp-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.whatsapp-icon {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0.10; /* Mengubah opacity default agar ikon lebih terlihat */
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease; /* Menambahkan transisi untuk opacity dan box-shadow */
+}
+
+.whatsapp-icon:hover {
+    opacity: 1; /* Ikon menjadi penuh saat hover */
+    transform: scale(1.1); /* Sedikit memperbesar ikon */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Meningkatkan bayangan untuk efek kedalaman */
+}
+
+/* Responsivitas untuk perangkat kecil */
+@media (max-width: 576px) {
+    .whatsapp-icon {
+        width: 50px;
+        height: 50px;
+    }
+}

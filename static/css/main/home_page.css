@@ -1,0 +1,360 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap');
+
+* {
+    font-family: "League Spartan", sans-serif;
+    box-sizing: border-box;
+}
+
+/* Animasi Fade-in */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-in.visible {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Main Section */
+.main-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 10rem;
+    background: linear-gradient(180deg, rgba(1, 65, 159, 1) 0%, rgba(13, 110, 253, 1) 100%);
+    color: white;
+    overflow: hidden;
+}
+
+.main-section .text-content {
+    max-width: 50%;
+}
+
+.main-section .text-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.main-section .text-content p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.main-section .text-content .btn {
+    font-size: 1.1rem;
+    background-color: #1b1bb3;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.main-section .text-content .btn:hover {
+    transform: scale(1.05);
+    background-color: #0f0f7a;
+}
+
+.main-section .image-content {
+    max-width: 40%;
+    transform: translateY(2rem);
+    transition: transform 0.5s ease;
+}
+
+.main-section .image-content img {
+    max-width: 100%;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+/* About Section */
+/* .about-section {
+    padding: 2rem 10rem;
+} */
+
+.about-section .item {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-section .item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.about-section .row .col p {
+    margin: 0;
+    font-size: 1rem;
+    text-align: center;
+}
+
+/* Flow Section */
+.flow-section {
+    padding: 2rem 10rem;
+}
+
+.flow-section .cont {
+    background: linear-gradient(180deg, rgba(1, 65, 159, 1) 0%, rgba(13, 110, 253, 1) 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.flow-section .col-item {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.flow-section .col-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#number {
+    font-size: 1.2rem;
+    color: white;
+    height: 3rem;
+    width: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -1.5rem);
+}
+
+.title-number {
+    padding-top: 2.5rem;
+}
+
+/* Car List Section */
+.car-list-section {
+    padding: 2rem 10rem;
+}
+
+.car-list .card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+
+.car-list .card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#gambar_mobil {
+    height: 15rem;
+    object-fit: cover;
+}
+
+.car-btn {
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.car-btn:hover {
+    transform: scale(1.05);
+    background-color: #0f0f7a;
+}
+
+#rating-stars {
+    color: gold;
+    font-size: 1.2rem;
+}
+
+.star {
+    font-size: 1.2rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.star.selected,
+.star-rated {
+    color: #f39c12;
+}
+
+.star:hover {
+    color: #f39c12;
+}
+
+/* Owl Carousel */
+.owl-carousel .owl-item {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* .owl-carousel .owl-item.active {
+    opacity: 1;
+    transform: scale(1);
+} */
+
+/* Filter Section */
+.filter-section form .form-control,
+.filter-section form .form-select {
+    font-size: 0.9rem;
+}
+
+.filter-section .btn {
+    font-size: 0.9rem;
+}
+
+/* Media Queries untuk Responsivitas */
+
+/* Tablet (max-width: 768px) */
+@media (max-width: 768px) {
+    .main-section {
+        flex-direction: column;
+        padding: 1.5rem 2rem;
+        text-align: center;
+    }
+
+    .main-section .text-content {
+        max-width: 100%;
+        margin-bottom: 1.5rem;
+    }
+
+    .main-section .text-content h1 {
+        font-size: 2rem;
+    }
+
+    .main-section .text-content p {
+        font-size: 1rem;
+    }
+
+    .main-section .image-content {
+        max-width: 80%;
+        transform: none;
+    }
+
+    .about-section,
+    .flow-section,
+    .car-list-section {
+        padding: 1.5rem 2rem;
+    }
+
+    .about-section .row {
+        flex-direction: column;
+    }
+
+    .about-section .col {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .flow-section .row {
+        flex-direction: column;
+    }
+
+    .flow-section .col {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .car-list-section .card {
+        margin-bottom: 1rem;
+    }
+
+    #gambar_mobil {
+        height: 12rem;
+    }
+
+    .filter-section .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-section .col,
+    .filter-section .col-auto {
+        width: 100%;
+    }
+}
+
+/* Mobile (max-width: 576px) */
+@media (max-width: 576px) {
+    .main-section {
+        padding: 1rem 1rem;
+    }
+
+    .main-section .text-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .main-section .text-content p {
+        font-size: 0.9rem;
+    }
+
+    .main-section .text-content .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .main-section .image-content {
+        max-width: 100%;
+    }
+
+    .about-section,
+    .flow-section,
+    .car-list-section {
+        padding: 1rem 1rem;
+    }
+
+    .about-section .item img,
+    .flow-section .col-item img {
+        height: 3rem;
+        width: 3rem;
+    }
+
+    #number {
+        font-size: 1rem;
+        height: 2rem;
+        width: 2rem;
+        transform: translate(-50%, -1rem);
+    }
+
+    .title-number {
+        padding-top: 1.5rem;
+    }
+
+    #gambar_mobil {
+        height: 10rem;
+    }
+
+    #rating-stars,
+    .star {
+        font-size: 1rem;
+    }
+
+    .car-list-section h2,
+    .filter-section h2 {
+        font-size: 1.5rem;
+    }
+
+    .filter-section form .form-control,
+    .filter-section form .form-select,
+    .filter-section .btn {
+        font-size: 0.8rem;
+    }
+}
+
+/* Override gaya eicon-seat */
+.eicon-seat,
+.eicon-transmission,
+.fa-solid.fa-gas-pump {
+    font-size: 1.2rem !important;
+    line-height: 1;
+}
+
+
+
+
+

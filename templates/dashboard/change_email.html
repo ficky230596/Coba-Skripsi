@@ -1,0 +1,216 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/dashboard/settings.js') }}"></script>
+<script>
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+function validateAndInitiateChangeEmail(username) {
+    const password = document.getElementById('current_password').value;
+    const newEmail = document.getElementById('new_email').value;
+    const errorElement = document.getElementById('emailError');
+    if (!password) {
+        errorElement.textContent = 'Password tidak boleh kosong';
+        return;
+    }
+    if (!newEmail) {
+        errorElement.textContent = 'Email baru tidak boleh kosong';
+        return;
+    }
+    if (!validateEmail(newEmail)) {
+        errorElement.textContent = 'Masukkan email yang valid';
+        return;
+    }
+    errorElement.textContent = '';
+    initiateChangeEmail(username, password, newEmail);
+}
+
+function validateAndVerifyOldEmail(username) {
+    const kode = document.getElementById('kode_old').value;
+    const errorElement = document.getElementById('kodeOldError');
+    if (!kode) {
+        errorElement.textContent = 'Kode verifikasi tidak boleh kosong';
+        return;
+    }
+    errorElement.textContent = '';
+    verifyOldEmail(username, kode);
+}
+
+function validateAndVerifyNewEmail(username) {
+    const kode = document.getElementById('kode_new').value;
+    const errorElement = document.getElementById('kodeNewError');
+    if (!kode) {
+        errorElement.textContent = 'Kode verifikasi tidak boleh kosong';
+        return;
+    }
+    errorElement.textContent = '';
+    verifyNewEmail(username, kode);
+}
+
+function initiateChangeEmail(username, password, newEmail) {
+    $("#btn_initiate_email").attr("disabled", true);
+    $.ajax({
+        type: "POST",
+        url: "/settings/change_email",
+        data: {
+            mtd: 'initiate_change',
+            username: username,
+            password: password,
+            new_email: newEmail
+        },
+        success: function(response) {
+            if (response["result"] == "success") {
+                window.location.reload();
+            } else {
+                $("#emailError").text(response["msg"]);
+                $("#emailError").addClass("text-danger");
+                $("#btn_initiate_email").attr("disabled", false);
+            }
+        },
+        error: function() {
+            $("#emailError").text("Terjadi kesalahan, coba lagi nanti.");
+            $("#btn_initiate_email").attr("disabled", false);
+        }
+    });
+}
+
+function verifyOldEmail(username, kode) {
+    $("#btn_verify_old").attr("disabled", true);
+    $.ajax({
+        type: "POST",
+        url: "/settings/change_email",
+        data: {
+            mtd: 'verify_old_email',
+            username: username,
+            kode: kode
+        },
+        success: function(response) {
+            if (response["result"] == "success") {
+                window.location.reload();
+            } else {
+                $("#kodeOldError").text(response["msg"]);
+                $("#kodeOldError").addClass("text-danger");
+                $("#btn_verify_old").attr("disabled", false);
+            }
+        },
+        error: function() {
+            $("#kodeOldError").text("Terjadi kesalahan, coba lagi nanti.");
+            $("#btn_verify_old").attr("disabled", false);
+        }
+    });
+}
+
+function verifyNewEmail(username, kode) {
+    $("#btn_verify_new").attr("disabled", true);
+    $.ajax({
+        type: "POST",
+        url: "/settings/change_email",
+        data: {
+            mtd: 'verify_new_email',
+            username: username,
+            kode: kode
+        },
+        success: function(response) {
+            if (response["result"] == "success") {
+                window.location = "/settings"; // Redirect ke setting.html
+            } else {
+                $("#kodeNewError").text(response["msg"]);
+                $("#kodeNewError").addClass("text-danger");
+                $("#btn_verify_new").attr("disabled", false);
+            }
+        },
+        error: function() {
+            $("#kodeNewError").text("Terjadi kesalahan, coba lagi nanti.");
+            $("#btn_verify_new").attr("disabled", false);
+        }
+    });
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="title-dashboard">
+    <div class="title d-flex align-items-center justify-content-between w-100">
+        <h2 class="text-primary m-0">Ganti Email</h2>
+    </div>
+</div>
+<div class="px-4">
+    {% if user_info.verif == 'unverif' %}
+    <p class="text-secondary px-2 w-50">Email Anda belum terverifikasi. Harap verifikasi email terlebih dahulu dengan menekan tombol di bawah.</p>
+    <div class="px-2">
+        <button type="button" id="btn_email" class="btn btn-primary" onclick="send_verif('{{user_info.username}}')">
+            Kirim Verifikasi
+        </button>
+    </div>
+    {% elif user_info.verif == 'sending_email' %}
+    <p class="text-secondary px-2 w-50">Kami sudah mengirim kode verifikasi. Masukkan kode verifikasi di bawah ini.</p>
+    <div class="px-2 mb-3">
+        <input type="text" class="form-control" id="kode" aria-describedby="helpId" placeholder="Masukkan kode verifikasi" />
+        <small id="kodeError" class="form-text text-danger"></small>
+    </div>
+    <div class="px-2">
+        <button type="button" id="btn_email" class="btn btn-primary" onclick="validateAndVerify('{{user_info.username}}')">
+            Verifikasi
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="send_verif('{{user_info.username}}')">
+            Kirim Ulang
+        </button>
+    </div>
+    {% elif user_info.verif == 'initiate_change' %}
+    <p class="text-secondary px-2 w-50">Masukkan kata sandi Anda dan email baru.</p>
+    <div class="px-2 mb-3">
+        <input type="password" class="form-control" id="current_password" aria-describedby="helpId" placeholder="Masukkan kata sandi saat ini" />
+        <input type="text" class="form-control mt-2" id="new_email" aria-describedby="helpId" placeholder="Masukkan email baru" />
+        <small id="emailError" class="form-text text-danger"></small>
+    </div>
+    <div class="px-2">
+        <button type="button" id="btn_initiate_email" class="btn btn-primary" onclick="validateAndInitiateChangeEmail('{{user_info.username}}')">
+            Lanjutkan
+        </button>
+    </div>
+    {% elif user_info.verif == 'verify_old_email' %}
+    <p class="text-secondary px-2 w-50">Kode verifikasi telah dikirim ke email lama Anda: {{user_info.email}}. Masukkan kode di bawah ini.</p>
+    <div class="px-2 mb-3">
+        <input type="text" class="form-control" id="kode_old" aria-describedby="helpId" placeholder="Masukkan kode verifikasi" />
+        <small id="kodeOldError" class="form-text text-danger"></small>
+    </div>
+    <div class="px-2">
+        <button type="button" id="btn_verify_old" class="btn btn-primary" onclick="validateAndVerifyOldEmail('{{user_info.username}}')">
+            Verifikasi
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="send_verif('{{user_info.username}}')">
+            Kirim Ulang
+        </button>
+    </div>
+    {% elif user_info.verif == 'verify_new_email' %}
+    <p class="text-secondary px-2 w-50">Kode verifikasi telah dikirim ke email baru Anda: {{user_info.temp_email}}. Masukkan kode di bawah ini.</p>
+    <div class="px-2 mb-3">
+        <input type="text" class="form-control" id="kode_new" aria-describedby="helpId" placeholder="Masukkan kode verifikasi" />
+        <small id="kodeNewError" class="form-text text-danger"></small>
+    </div>
+    <div class="px-2">
+        <button type="button" id="btn_verify_new" class="btn btn-primary" onclick="validateAndVerifyNewEmail('{{user_info.username}}')">
+            Verifikasi
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="send_verif('{{user_info.username}}')">
+            Kirim Ulang
+        </button>
+    </div>
+    {% else %}
+    <p class="text-secondary px-2 w-50">Masukkan kata sandi Anda dan email baru.</p>
+    <div class="px-2 mb-3">
+        <input type="password" class="form-control" id="current_password" aria-describedby="helpId" placeholder="Masukkan kata sandi saat ini" />
+        <input type="text" class="form-control mt-2" id="new_email" aria-describedby="helpId" placeholder="Masukkan email baru" />
+        <small id="emailError" class="form-text text-danger"></small>
+    </div>
+    <div class="px-2">
+        <button type="button" id="btn_initiate_email" class="btn btn-primary" onclick="validateAndInitiateChangeEmail('{{user_info.username}}')">
+            Lanjutkan
+        </button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

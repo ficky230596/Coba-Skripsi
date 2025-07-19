@@ -1,0 +1,112 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/data_mobil.css') }}">
+{% endblock %}
+
+{% block javascript %}
+<script type="module" src="{{ url_for('static', filename='js/dashboard/datamobil.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="title-dashboard">
+  <div class="title d-flex align-items-center justify-content-between w-100">
+    <h2 class="text-primary m-0">Data Mobil</h2>
+    <div class="w-50 position-relative">
+
+      <div class="input d-flex align-items-center border p-2 px-4 rounded-5">
+        <input type="text" id="search-data" class="w-100" placeholder="Cari merek">
+        <span class="text-secondary"><i class="fa-solid fa-magnifying-glass"></i></span>
+      </div>
+
+    </div>
+    <div class="">
+      <a class="btn btn-primary" role="button" href="/data_mobil/add-data">add data</a>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid p-0 p-4 data">
+
+  <div class="table_data">
+    <table class="shadow">
+      <thead>
+        <tr for>
+          <th>#</th>
+          <th>Nama Mobil</th>
+          <th>Type Mobil</th>
+          <th>Nomor Plat</th>
+          <th>Bahan Bakar</th>
+          <th>Seat</th>
+          <th>Transmisi</th>
+          <th>Harga</th>
+          <th>Status</th>
+          <th>Action</th>
+          <th>Visibility</th>
+        </tr>
+
+      </thead>
+      <tbody id="list-data">
+        {% for dt in data %}
+        <tr>
+          <td>{{loop.index}}</td>
+          <td id="merek">{{dt.merek}}</td>
+          <td>{{ dt.type_mobil }}</td>
+          <td>{{ dt.plat }}</td>
+          <td>{{ dt.bahan_bakar }}</td>
+          <td>{{dt.seat}}</td>
+          <td>{{dt.transmisi}}</td>
+          <td data-target="currency">{{dt.harga}}</td>
+          <td id="status">{{dt.status}}</td>
+
+          <td>
+            <button class="btn fa-solid fa-edit" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+            <ul class="dropdown-menu">
+              {% if dt.status == 'Diproses' %}
+              <li><a class="dropdown-item" id="btn" onclick="confirm('pesanan','{{dt.id_mobil}}','{{dt.order_id}}')"
+                  role="button">Konfirmasi Pesanan</a></li>
+              {% elif dt.status == 'Digunakan' %}
+              <li><a class="dropdown-item" onclick="confirm('kembali','{{dt.id_mobil}}')" role="button">Konfirmasi
+                  Kembali</a></li>
+              {% else %}
+              <li><a class="dropdown-item" href="/data_mobil/edit?id={{dt.id_mobil}}">Edit Mobil</a></li>
+              <li><a class="dropdown-item" onclick="confirm('hapus','{{dt.id_mobil}}')" role="button">Hapus</a></li>
+              {% if dt.visibility == 'visible' %}
+              <li><a class="dropdown-item" onclick="toggleVisibility('hide','{{dt.id_mobil}}')"
+                  role="button">Sembunyikan</a></li>
+              {% else %}
+              <li><a class="dropdown-item" onclick="toggleVisibility('show','{{dt.id_mobil}}')"
+                  role="button">Tampilkan</a></li>
+              {% endif %}
+              {% endif %}
+            </ul>
+          </td>
+
+          <td>
+            {% if dt.visibility == 'visible' %}
+            <a class="dropdown-item" onclick="toggleVisibility('hide', '{{ dt.id_mobil }}')" role="button">
+              <i class="fa-solid fa-eye-slash"></i> Hide
+            </a>
+            {% else %}
+            <a class="dropdown-item" onclick="toggleVisibility('show', '{{ dt.id_mobil }}')" role="button">
+              <i class="fa-solid fa-eye"></i> Show
+            </a>
+            {% endif %}
+          </td>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center">Tidak ada data yang tersedia.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+
+</div>
+
+{% endblock %}
+<!-- komen -->

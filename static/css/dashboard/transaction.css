@@ -1,0 +1,149 @@
+/* Tabel */
+.table_data {
+  margin-top: 20px;
+}
+
+.table {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Warna untuk setiap merek mobil */
+.car-color-1 {
+  background-color: #e3f2fd; /* Biru muda untuk Toyota Avanza */
+}
+.car-color-2 {
+  background-color: #e8f5e9; /* Hijau muda untuk Honda Jazz */
+}
+.car-color-3 {
+  background-color: #fff3e0; /* Oranye muda untuk Daihatsu Xenia */
+}
+.car-color-4 {
+  background-color: #f3e5f5; /* Ungu muda untuk Suzuki Ertiga */
+}
+.car-color-5 {
+  background-color: #efebe9; /* Abu-abu muda untuk Mitsubishi Xpander */
+}
+.car-color-default {
+  background-color: #ffffff; /* Putih untuk merek tidak dikenal */
+}
+
+/* Warna untuk status transaksi (border kiri) */
+.status-digunakan {
+  border-left: 4px solid #2196f3; /* Biru untuk status "digunakan" */
+}
+.status-selesai {
+  border-left: 4px solid #4caf50; /* Hijau untuk status "selesai" */
+}
+.status-pembayaran {
+  border-left: 4px solid #ff9800; /* Oranye untuk status "pembayaran" */
+}
+
+/* Badge untuk kolom Status */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+.status-badge-digunakan {
+  background-color: #bbdefb; /* Biru muda untuk "digunakan" */
+  color: #1565c0;
+}
+.status-badge-selesai {
+  background-color: #c8e6c9; /* Hijau muda untuk "selesai" */
+  color: #2e7d32;
+}
+.status-badge-pembayaran {
+  background-color: #ffe0b2; /* Oranye muda untuk "pembayaran" */
+  color: #ef6c00;
+}
+
+/* Gaya untuk status di modal */
+#modal-status.status-digunakan {
+  color: #1565c0; /* Biru untuk "digunakan" */
+  font-weight: 600;
+}
+#modal-status.status-selesai {
+  color: #2e7d32; /* Hijau untuk "selesai" */
+  font-weight: 600;
+}
+#modal-status.status-pembayaran {
+  color: #ef6c00; /* Oranye untuk "pembayaran" */
+  font-weight: 600;
+}
+
+/* Pastikan teks tetap terbaca */
+.car-color-1, .car-color-2, .car-color-3, .car-color-4, .car-color-5, .car-color-default,
+.status-digunakan, .status-selesai, .status-pembayaran {
+  color: #333; /* Warna teks gelap untuk kontras */
+}
+
+/* Gaya tombol detail */
+.btn-detail {
+  padding: 5px 10px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-detail:hover {
+  background-color: #0b5ed7;
+}
+
+/* Modal */
+.modal-content {
+  border-radius: 10px;
+}
+
+.modal-header {
+  border-bottom: none;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  font-weight: 500;
+}
+
+.card-body p {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.card-body p strong {
+  color: #333;
+}
+
+.card-body p span {
+  color: #666;
+}
+
+.img-clickable {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.img-clickable:hover {
+  transform: scale(1.05);
+}
+
+#zoomed-image {
+  max-height: 80vh;
+}
+
+/* Jaga style tabel tetap konsisten */
+.table_data .table th,
+.table_data .table td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table_data .table .countdown {
+  white-space: nowrap;
+}

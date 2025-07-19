@@ -1,0 +1,50 @@
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/rating.css') }}">
+<!-- Bootstrap CSS (jika belum ada di main_layout.html) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="icon" href="{{ url_for('static', filename='icon/logo3.png') }}" type="image/png/">
+{% endblock %}
+
+{% block js %}
+<!-- jQuery (jika belum ada di main_layout.html) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Font Awesome (untuk bintang rating) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<!-- Owl Carousel (jika masih diperlukan) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+<script src="{{ url_for('static', filename='js/main/car_details.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main/rating.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 rating-container">
+    <h2 class="text-center mb-4">Berikan Rating untuk Mobil</h2>
+    <form id="ratingForm" action="{{ url_for('submit_rating') }}" method="post" class="p-4 bg-light rounded shadow-sm">
+        <input type="hidden" name="car_id" value="{{ car_id }}">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <input type="hidden" id="rating" name="rating">
+
+        <div class="mb-3">
+            <label for="rating" class="form-label fw-bold">Rating</label>
+            <div class="d-flex justify-content-center rating-stars">
+                <span class="fa fa-star" data-value="1"></span>
+                <span class="fa fa-star" data-value="2"></span>
+                <span class="fa fa-star" data-value="3"></span>
+                <span class="fa fa-star" data-value="4"></span>
+                <span class="fa fa-star" data-value="5"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="comment" class="form-label fw-bold">Komentar</label>
+            <textarea id="comment" name="comment" class="form-control" rows="4"
+                placeholder="Tulis ulasan Anda di sini..."></textarea>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-lg">Kirim Rating</button>
+        </div>
+    </form>
+    <div id="response-message" class="text-center mt-3"></div>
+</div>
+{% endblock %}

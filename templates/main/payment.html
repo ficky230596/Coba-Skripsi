@@ -1,0 +1,138 @@
+{% extends 'main/main_layout.html' %}
+
+{% block content %}
+<div class="w-100 p-4">
+    <div id="snap-container" class="d-flex justify-content-center">
+        <!-- Gambar loading -->
+        <div id="loading" class="spinner" style="display: none;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SB-Mid-client-pYGOQrTmRDZCDTJt"></script>
+<!-- Gunakan Snap.js produksi untuk online -->
+<!-- <script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="text/javascript">
+    $(document).ready(function(){   
+        // Tampilkan gambar loading
+        $('#loading').show();
+        
+        window.snap.embed('{{data.transaction_token}}', {
+            embedId: 'snap-container',
+            onSuccess: function (result) {
+                console.log('Midtrans Payment Success:', result);
+                $('#loading').hide();
+                
+                $.ajax({
+                    url: "/api/transaction-success",
+                    type: "POST",
+                    data: {
+                        penyewa: '{{data.penyewa}}',
+                        idcar: '{{data.id_mobil}}',
+                        orderid: '{{data.order_id}}',
+                        from: 'user'
+                    },
+                    success: function (response) {
+                        console.log('Response from /api/transaction-success:', response);
+                        if (response.status === 'success') {
+                            let message = response.gunakan_pengantaran
+                                ? 'Pembayaran berhasil. Mobil akan diantar ke lokasi yang Anda tentukan.'
+                                : 'Pembayaran berhasil. Silakan ke kantor untuk mengambil mobil. Jangan lupa membawa bukti pembayaran.';
+                            if (response.whatsapp_status && 
+                                response.whatsapp_status.user === 'sent' && 
+                                response.whatsapp_status.admin === 'sent') {
+                                message += '\nNotifikasi WhatsApp telah dikirim.';
+                            } else {
+                                message += '\nNotifikasi WhatsApp gagal dikirim.';
+                            }
+                            Swal.fire({
+                                title: 'Pembayaran Berhasil',
+                                text: message,
+                                icon: 'success',
+                                confirmButtonColor: '#3085d6',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.replace('/');
+                            });
+                        } else {
+                            console.warn('Transaction failed with response:', response);
+                            Swal.fire({
+                                title: 'Terjadi Kesalahan',
+                                text: response.message || 'Pembayaran gagal. Silakan coba lagi.',
+                                icon: 'error',
+                                confirmButtonColor: '#3085d6',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.replace('/');
+                            });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', xhr.responseText, status, error);
+                        $('#loading').hide();
+                        let errorMsg = 'Pembayaran gagal. Silakan coba lagi.';
+                        try {
+                            const errorData = JSON.parse(xhr.responseText);
+                            if (errorData.message) {
+                                errorMsg = errorData.message;
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse AJAX error response:', e);
+                        }
+                        Swal.fire({
+                            title: 'Terjadi Kesalahan',
+                            text: errorMsg,
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            window.location.replace('/');
+                        });
+                    }
+                });
+            },
+            onPending: function(result) {
+                console.log('Midtrans Payment Pending:', result);
+                $('#loading').hide();
+                Swal.fire({
+                    title: 'Pembayaran Tertunda',
+                    text: 'Pembayaran Anda sedang diproses. Silakan tunggu konfirmasi.',
+                    icon: 'info',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.replace('/');
+                });
+            },
+            onError: function(result) {
+                console.error('Midtrans Payment Error:', result);
+                $('#loading').hide();
+                Swal.fire({
+                    title: 'Terjadi Kesalahan',
+                    text: 'Pembayaran gagal. Silakan coba lagi.',
+                    icon: 'error',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.replace('/');
+                });
+            },
+            onClose: function() {
+                console.log('Midtrans Payment Closed');
+                $('#loading').hide();
+                Swal.fire({
+                    title: 'Pembayaran Dibatalkan',
+                    text: 'Anda menutup jendela pembayaran. Silakan coba lagi.',
+                    icon: 'warning',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.replace('/');
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

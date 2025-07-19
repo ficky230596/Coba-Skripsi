@@ -1,0 +1,30 @@
+{% extends 'main/main_layout.html' %}
+{% block title %} Home{% endblock %}
+{% block js %} 
+<p>asdasdasdasd</p>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <a href="/transaksi" class="btn btn-primary mb-3">Transaksi</a>
+    <div class="row g-3 align-items-center mb-3">
+
+        {% for dt in data %}
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <p>{{ dt.merek }} {{ dt.model }}</p>
+                    <p>{{ dt.harga }}</p>
+                </div>
+                <div class="card-body"><a name="" id="" class="btn btn-primary" href="/detail-mobil?id={{ dt._id }}" role="button">Beli</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            
+        {% endfor %}
+
+    </div>
+
+</div>
+{% endblock %}

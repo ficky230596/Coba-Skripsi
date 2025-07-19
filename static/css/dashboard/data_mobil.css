@@ -1,0 +1,176 @@
+/* Gaya yang sudah ada */
+.input input {
+    border: none;
+}
+
+.input input:focus {
+    outline: none;
+}
+
+.table_data table {
+    width: 100%;
+    border-collapse: collapse; /* Menghindari celah antar sel */
+}
+
+.table_data table thead th {
+    padding: 1rem;
+    color: aliceblue;
+    background-color: #0d6dfd;
+    font-size: 1rem; /* Ukuran font default */
+}
+
+.table_data table th:first-child {
+    border-radius: 0.5rem 0 0 0;
+}
+
+.table_data table th:last-child {
+    border-radius: 0 0.5rem 0 0;
+}
+
+.table_data table tbody td {
+    padding: 0.5rem 1rem;
+}
+
+.table-success {
+    background-color: rgba(0, 255, 0, 0.137);
+}
+
+.table-danger {
+    background-color: rgba(255, 0, 0, 0.137);
+}
+
+.table-warning {
+    background-color: rgba(255, 251, 0, 0.137);
+}
+
+/* Lebar kolom default untuk desktop */
+.table_data table tr > *:nth-child(1) { width: 2rem; }
+.table_data table tr > *:nth-child(2) { width: 20%; }
+.table_data table tr > *:nth-child(4) { width: 15%; }
+.table_data table tr > *:nth-child(5) { width: 15%; }
+
+/* Media Query untuk tablet (lebar layar <= 992px) */
+@media screen and (max-width: 992px) {
+    .title-dashboard .title {
+        flex-direction: column; /* Tata letak vertikal untuk title */
+        align-items: flex-start;
+        gap: 1rem; /* Jarak antar elemen */
+    }
+
+    .title-dashboard .title .w-50 {
+        width: 100%; /* Input pencarian memenuhi lebar */
+    }
+
+    .table_data table thead th {
+        padding: 0.75rem; /* Kurangi padding untuk header */
+        font-size: 0.9rem; /* Kurangi ukuran font */
+    }
+
+    .table_data table tbody td {
+        padding: 0.5rem; /* Kurangi padding untuk sel */
+        font-size: 0.85rem; /* Kurangi ukuran font */
+    }
+
+    /* Sesuaikan lebar kolom */
+    .table_data table tr > *:nth-child(1) { width: 1.5rem; }
+    .table_data table tr > *:nth-child(2) { width: 18%; }
+    .table_data table tr > *:nth-child(4) { width: 12%; }
+    .table_data table tr > *:nth-child(5) { width: 12%; }
+}
+
+/* Media Query untuk mobile (lebar layar <= 768px) */
+@media screen and (max-width: 768px) {
+    .container-fluid.data {
+        padding: 1rem; /* Kurangi padding container */
+    }
+
+    .title-dashboard .title {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .title-dashboard .title h2 {
+        font-size: 1.5rem; /* Kurangi ukuran judul */
+    }
+
+    .title-dashboard .title .w-50 {
+        width: 100%;
+    }
+
+    .title-dashboard .title .input {
+        padding: 0.5rem 1rem; /* Kurangi padding input */
+    }
+
+    .title-dashboard .title .btn {
+        width: 100%; /* Tombol "Add Data" memenuhi lebar */
+        text-align: center;
+    }
+
+    /* Membuat tabel responsif dengan scroll horizontal */
+    .table_data {
+        overflow-x: auto; /* Aktifkan scroll horizontal */
+    }
+
+    .table_data table {
+        min-width: 800px; /* Pastikan tabel memiliki lebar minimum */
+    }
+
+    .table_data table thead th {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .table_data table tbody td {
+        padding: 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    /* Sesuaikan lebar kolom untuk mobile */
+    .table_data table tr > *:nth-child(1) { width: 1rem; }
+    .table_data table tr > *:nth-child(2) { width: 15%; }
+    .table_data table tr > *:nth-child(4) { width: 10%; }
+    .table_data table tr > *:nth-child(5) { width: 10%; }
+
+    /* Perkecil ikon dan tombol dropdown */
+    .table_data table tbody td .btn {
+        font-size: 0.7rem;
+        padding: 0.3rem;
+    }
+
+    .table_data table tbody td .dropdown-menu {
+        min-width: 100px; /* Pastikan dropdown tidak terlalu lebar */
+        font-size: 0.75rem;
+    }
+
+    .table_data table tbody td .dropdown-item {
+        padding: 0.3rem 0.5rem;
+    }
+}
+
+/* Media Query untuk layar sangat kecil (lebar layar <= 576px) */
+@media screen and (max-width: 576px) {
+    .title-dashboard .title h2 {
+        font-size: 1.2rem;
+    }
+
+    .title-dashboard .title .input {
+        padding: 0.4rem 0.8rem;
+    }
+
+    .table_data table thead th {
+        padding: 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .table_data table tbody td {
+        padding: 0.3rem;
+        font-size: 0.65rem;
+    }
+
+    /* Sembunyikan kolom yang kurang penting untuk menghemat ruang */
+    .table_data table tr > *:nth-child(6), /* Seat */
+    .table_data table tr > *:nth-child(7) /* Transmisi */ {
+        display: none;
+    }
+}

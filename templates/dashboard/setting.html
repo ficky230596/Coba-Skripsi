@@ -1,0 +1,108 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/dashboard/settings.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="title-dashboard">
+    <div class="title d-flex align-items-center justify-content-between w-100">
+        <h2 class="text-primary m-0">Setting</h2>
+    </div>
+</div>
+
+<div class="px-4">
+    <div class="p-2">
+        <div class="col mb-4">
+            <h4 class="mb-2 ps-2">Username</h4>
+            <div class="p-3 border rounded-4 fs-5 d-flex justify-content-between align-items-center">
+                <span class="text-secondary">{{ user_info.username }}</span>
+                <span> <button type="button" data-bs-toggle="modal" data-bs-target="#ganti_user"
+                        class="btn text-primary"> Ganti Username </button> </span>
+                <!-- modal -->
+                <div class="modal fade" id="ganti_user" tabindex="-1" aria-labelledby="ganti_userLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog  modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="ganti_userLabel">Ganti Username</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" name="" id="new_username"
+                                        aria-describedby="helpId" placeholder="Masukan Username Baru" />
+
+
+                                </div>
+                                <div class="help mb-3">
+                                    <small id="helpId" class="form-text text-muted p-2">Username hanya bisa diganti
+                                        sekali dalam satu bulan</small>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" id="btn-change_username_admin"
+                                    onclick="change_username_admin('{{ user_info.username }}')">Save changes</button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col mb-4">
+            <h4 class="mb-2 ps-2">Email</h4>
+            <div class="p-3 border rounded-4 fs-5 d-flex justify-content-between align-items-center">
+                {% if user_info.email %}
+                <span class="text-secondary">
+                    {{user_info.email}}
+                </span>
+                <span> <a type="button" name="" id="" class="btn text-primary" href="/settings/change_email"> Ganti Email
+                    </a> </span>
+                {% else %}
+                <span class="text-secondary">
+                    Belum ada email
+                </span>
+                <span> <a type="button" name="" id="" class="btn text-primary" href="/settings/change_email"> Tambahkan Email
+                    </a> </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col mb-4">
+            <h4 class="mb-2 ps-2">Password</h4>
+            <div class="p-3 border rounded-4 fs-5 d-flex justify-content-between align-items-center">
+                <span class="text-secondary">*******</span>
+                <span> <button type="button" class="btn text-primary" data-bs-toggle="modal" data-bs-target="#ganti_password"> Ganti Password </button> </span>
+
+                <div class="modal fade" id="ganti_password" data-bs-backdrop="static" tabindex="-1" aria-labelledby="ganti_password" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h1 class="modal-title fs-5" id="ganti_password">Ganti Password</h1>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          
+                            <div class="mb-3">
+                                <input type="text"  class="form-control"  name="" id="ganti_password_lama"
+                                    aria-describedby="helpId" placeholder="Masukan password lama" />
+                            </div>
+
+                            <div class="mb-3">
+                                <input type="text"  class="form-control"  name="" id="ganti_password_baru"
+                                    aria-describedby="helpId" placeholder="Masukan password Baru" />
+                            </div>
+                          <button type="button" class="btn btn-primary" id="btn_ganti_password" onclick="ganti_password('{{user_info.username}}')">Save changes</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

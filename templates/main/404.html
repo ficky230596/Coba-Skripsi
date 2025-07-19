@@ -1,0 +1,42 @@
+{% extends 'main/main_layout.html' %}
+
+{% block title %}
+| 404 - Halaman Tidak Ditemukan
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main/404.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-content page-container" id="page-content">
+    <div >
+        <div class="row d-flex justify-content-center align-items-center min-vh-100">
+            <div class="col-12 col-md-10 col-lg-7 text-center error-card">
+                <!-- Gambar 404 -->
+                <img src="{{ url_for('static', filename='icon/logo3.png') }}" alt="404 Car" class="img-fluid mb-4 error-img" />
+                
+                <!-- Kode 404 dengan Animasi -->
+                <h1 class="display-1 text-danger animate-error">404</h1>
+                
+                <!-- Pesan Utama -->
+                <h2 class="mb-3">Oops! Jalan Buntu!</h2>
+                <p class="lead mb-4 text-muted">
+                    Maaf apa yang kau cari telah pergi Cobalah untuk merelakan.
+                    Mari kita kembalikan Anda ke jalur yang benar!
+                </p>
+                
+                <!-- Tombol Aksi -->
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('home') }}" class="btn btn-primary btn-lg animate-btn">
+                        <i class="fa-solid fa-home me-2"></i>Kembali ke Beranda
+                    </a>
+                    <a href="/kontak" class="btn btn-outline-secondary btn-lg animate-btn">
+                        <i class="fa-solid fa-envelope me-2"></i>Hubungi Dukungan
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
