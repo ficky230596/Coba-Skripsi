@@ -208,7 +208,7 @@ def cancel_unpaid_transactions():
     while True:
         try:
             now = datetime.now()
-            time_limit = now - timedelta(minutes=2)  # 2 menit untuk pengujian
+            time_limit = now - timedelta(minutes=10)  # 2 menit untuk pengujian
             logger.info(f"Memeriksa transaksi yang belum dibayar sebelum {time_limit}")
             unpaid_transactions = db.transaction.find(
                 {
