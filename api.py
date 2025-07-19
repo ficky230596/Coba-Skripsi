@@ -495,7 +495,7 @@ def create_transaction():
             "phone": data_user["phone"],
         },
         "enabled_payments": ["credit_card", "bank_transfer", "gopay", "shopeepay"],
-        "expiry": {"duration": 2, "unit": "minutes"},
+        "expiry": {"duration": 15, "unit": "minutes"},
     }
 
     try:
