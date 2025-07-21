@@ -1,4 +1,3 @@
-// Fungsi untuk membatalkan transaksi secara manual
 function cancelPayment(order_id) {
     Swal.fire({
         position: "top",
@@ -45,13 +44,11 @@ function cancelPayment(order_id) {
     });
 }
 
-// Fungsi untuk menambahkan kelas CSS berdasarkan status transaksi
 function addStatusLabel() {
     $('.transaksi-unpaid').addClass('table-warning');
-    $('.transaksi-canceled').addClass('table-danger');
+    $('.transaksi-canceled, .transaksi-dibatalkan, .transaksi-dibatalkan-sendiri').addClass('table-danger');
 }
 
-// Fungsi untuk menampilkan notifikasi setelah pembatalan
 function alertAfter() {
     if (localStorage.getItem('dataDeleted') === 'true') {
         toastr.success('Pesanan sudah dibatalkan');
@@ -59,17 +56,16 @@ function alertAfter() {
     }
 }
 
-// Fungsi untuk memeriksa status transaksi setiap 10 detik
 function checkTransactionStatus() {
     $('.transaksi-unpaid').each(function () {
-        const order_id = $(this).attr('id');
+        const order_id = $(this).attr('id'); // Ambil order_id dari atribut id
         if (order_id) {
             $.ajax({
                 url: `/api/check_transaction_status/${order_id}`,
                 type: "GET",
                 success: function (response) {
                     if (response.result === 'success' && response.status === 'canceled') {
-                        toastr.warning(`Transaksi ${order_id} dibatalkan otomatis karena melebihi batas waktu pembayaran (2 menit)`);
+                        toastr.warning(`Transaksi ${order_id} dibatalkan otomatis karena melebihi batas waktu pembayaran`);
                         localStorage.setItem('dataDeleted', 'true');
                         location.reload();
                     }
@@ -82,65 +78,26 @@ function checkTransactionStatus() {
     });
 }
 
-// Fungsi untuk memulai hitungan mundur berdasarkan created_at
-function startCountdown() {
-    $('.transaksi-unpaid').each(function () {
-        const order_id = $(this).attr('id');
-        if (order_id) {
-            $.ajax({
-                url: `/api/check_transaction_status/${order_id}`,
-                type: "GET",
-                success: function (response) {
-                    if (response.result === 'success' && response.status === 'unpaid' && response.created_at) {
-                        const createdAt = new Date(response.created_at);
-                        const expiryTime = new Date(createdAt.getTime() + 2 * 60 * 1000); // 2 menit untuk pengujian
-                        const countdownElement = $(`#countdown-${order_id}`);
-
-                        function updateCountdown() {
-                            const now = new Date();
-                            const timeLeft = expiryTime - now;
-
-                            if (timeLeft <= 0) {
-                                countdownElement.text('Transaksi telah kedaluwarsa');
-                                countdownElement.addClass('text-danger');
-                                checkTransactionStatus();
-                                return;
-                            }
-
-                            const minutes = Math.floor(timeLeft / 1000 / 60);
-                            const seconds = Math.floor((timeLeft / 1000) % 60);
-                            countdownElement.text(`${minutes} menit ${seconds} detik tersisa`);
-                            setTimeout(updateCountdown, 1000);
-                        }
-
-                        updateCountdown();
-                    }
-                },
-                error: function (xhr) {
-                    console.error(`Gagal mengambil created_at untuk transaksi ${order_id}: ${xhr.statusText}`);
-                    $(`#countdown-${order_id}`).text('Gagal memuat batas waktu');
-                }
-            });
-        }
-    });
-}
-
-// Fungsi untuk mengurutkan tabel berdasarkan tanggal
+// Fungsi baru untuk mengurutkan tabel berdasarkan tanggal
 function sortTableByDate() {
-    const table = $('table.table');
+    const table = $('table.table'); // Pilih tabel
     const tbody = table.find('tbody');
-    const rows = tbody.find('tr').get();
+    const rows = tbody.find('tr').get(); // Ambil semua baris tabel
 
     rows.sort(function (a, b) {
+        // Ambil nilai tanggal dari kolom "Tanggal" (indeks 0)
         const dateA = $(a).find('td[data-label="Tanggal"]').text().trim();
         const dateB = $(b).find('td[data-label="Tanggal"]').text().trim();
 
+        // Konversi string tanggal (format DD-MMMM-YYYY) ke objek Date
         const dateObjA = parseDate(dateA);
         const dateObjB = parseDate(dateB);
 
+        // Urutkan dari terbaru ke terlama (descending)
         return dateObjB - dateObjA;
     });
 
+    // Kosongkan tbody dan tambahkan kembali baris yang sudah diurutkan
     tbody.empty();
     $.each(rows, function (index, row) {
         tbody.append(row);
@@ -149,8 +106,9 @@ function sortTableByDate() {
 
 // Fungsi untuk mengonversi string tanggal (DD-MMMM-YYYY) ke objek Date
 function parseDate(dateStr) {
+    // Contoh dateStr: "10-July-2025"
     const parts = dateStr.split('-');
-    if (parts.length !== 3) return new Date(0);
+    if (parts.length !== 3) return new Date(0); // Default jika format salah
 
     const day = parseInt(parts[0], 10);
     const monthNames = [
@@ -160,7 +118,7 @@ function parseDate(dateStr) {
     const month = monthNames.indexOf(parts[1]);
     const year = parseInt(parts[2], 10);
 
-    if (isNaN(day) || month === -1 || isNaN(year)) return new Date(0);
+    if (isNaN(day) || month === -1 || isNaN(year)) return new Date(0); // Default jika parsing gagal
 
     return new Date(year, month, day);
 }
@@ -168,13 +126,13 @@ function parseDate(dateStr) {
 $(document).ready(function () {
     addStatusLabel();
     alertAfter();
+    // Tambahkan event listener untuk tombol cancel
     $('.cancel-button').on('click', function () {
         const order_id = $(this).data('order-id');
         cancelPayment(order_id);
     });
-    checkTransactionStatus();
-    startCountdown();
-    setInterval(checkTransactionStatus, 10000); // 10 detik untuk pengujian
-    setInterval(startCountdown, 10000); // 10 detik untuk mendeteksi transaksi baru
+    // Periksa status transaksi setiap 30 detik
+    setInterval(checkTransactionStatus, 30000);
+    // Urutkan tabel saat halaman dimuat
     sortTableByDate();
 });

@@ -10,9 +10,11 @@
 {% endblock %}
 
 {% block js %}
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SB-Mid-client-pYGOQrTmRDZCDTJt"></script>
-<!-- Gunakan Snap.js produksi untuk online -->
-<!-- <script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script> -->
+{% if is_sandbox %}
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script>
+{% else %}
+<script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script>
+{% endif %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="text/javascript">
     $(document).ready(function(){   

@@ -77,7 +77,7 @@
     <div class="mb-3 form_item form_gambar">
       <label for="">Gambar</label>
       <label for="input-file" class="border image-cont mt-2 rounded">
-        <img src="{{ url_for('static', filename='Gambar/' + data.gambar) }}" alt="" id="imgPreview" class="rounded">
+        <img src="{{ url_for('static', filename='Gambar/mobil/' + data.gambar) }}" alt="" id="imgPreview" class="rounded">
       </label>
       <label for="input-file" class="mt-2 p-3 btn btn-primary rounded text-center">Pilih gambar</label>
       <input type="file" accept="image/jpeg,image/png,image/png" id="input-file" value="{{ url_for('static', filename='Gambar/' + data.gambar) }}" hidden>

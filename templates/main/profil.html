@@ -1,6 +1,8 @@
 {% extends 'main/main_layout.html' %}
 
-{% block title %} | Setting {% endblock %}
+{% block title %}
+| Setting
+{% endblock %}
 
 {% block js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -9,7 +11,7 @@
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main/profil.css') }}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <style>
     .spinner {
         border: 4px solid rgba(0, 0, 0, 0.1);
@@ -23,24 +25,27 @@
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
-    .password-container {
+    .position-relative {
         position: relative;
     }
-    .password-toggle {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
+    .toggle-password {
         cursor: pointer;
+        font-size: 1rem;
+        color: #6c757d;
     }
-    .status-message {
-        font-size: 0.9em;
-        margin-top: 5px;
+    .validation-message {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+    .validation-message.success {
+        color: #28a745;
         display: block;
     }
-    .status-available { color: green; }
-    .status-unavailable { color: red; }
-    .status-invalid { color: orange; }
+    .validation-message.error {
+        color: #dc3545;
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -55,7 +60,7 @@
                             <div class="card-block py-4">
                                 <div class="mb-3">
                                     <img src="{{ user_info['profile_image_path'] | default(url_for('static', filename='icon/user.jpg')) }}"
-                                         class="img-radius" id="profileImage" alt="Foto Profil">
+                                        class="img-radius" id="profileImage" alt="Foto Profil">
                                 </div>
                                 <h6 class="f-w-600 mb-2">Nama: {{ user_info['username'] }}</h6>
                                 <button class="btn btn-link text-white p-0" data-bs-toggle="modal" data-bs-target="#editModal">
@@ -101,9 +106,9 @@
                                         </p>
                                         <button onclick="showImage()" class="btn btn-primary mb-2">Tampilkan Foto SIM</button>
                                         <img id="ktpSimImage"
-                                             src="{{ url_for('static', filename=user_info['image_path'].replace('static/', '')) }}"
-                                             alt="Foto SIM"
-                                             class="img-fluid" style="display: none; margin-top: 10px;" />
+                                            src="{{ url_for('static', filename=user_info['image_path'].replace('static/', '')) }}"
+                                            alt="Foto SIM"
+                                            class="img-fluid" style="display: none; margin-top: 10px;" />
                                     </div>
                                 </div>
                             </div>
@@ -128,18 +133,18 @@
                     <div class="mb-3">
                         <label for="editName" class="form-label">Nama Pengguna</label>
                         <input type="text" class="form-control" id="editName" value="{{ user_info['username'] }}">
-                        <span id="usernameStatus" class="status-message"></span>
+                        <div id="usernameValidation" class="validation-message"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editEmail" class="form-label">Email</label>
-                        <input type="email" autocomplete="username" class="form-control" id="editEmail" value="{{ user_info['email'] }}">
-                        <span id="emailStatus" class="status-message"></span>
+                        <input type="email" class="form-control" id="editEmail" value="{{ user_info['email'] }}">
+                        <div id="emailValidation" class="validation-message"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editPhone" class="form-label">No Telpon</label>
                         <input type="tel" class="form-control" id="editPhone" value="{{ user_info['phone'] }}"
                                pattern="[0-9]*" inputmode="numeric" placeholder="Masukkan nomor telepon">
-                        <span id="phoneStatus" class="status-message"></span>
+                        <div id="phoneValidation" class="validation-message"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editAddress" class="form-label">Alamat</label>
@@ -149,15 +154,19 @@
                         <label for="editFullName" class="form-label">Nama Lengkap</label>
                         <input type="text" class="form-control" id="editFullName" value="{{ user_info['name'] }}">
                     </div>
-                    <div class="mb-3 password-container">
+                    <div class="mb-3 position-relative">
                         <label for="oldPassword" class="form-label">Password Lama</label>
-                        <input type="password" autocomplete="new-password" class="form-control" id="oldPassword">
-                        <i class="fa fa-eye password-toggle" id="toggleOldPassword"></i>
+                        <input type="password" class="form-control" id="oldPassword" placeholder="Masukkan password lama">
+                        <span class="position-absolute end-0 top-50 translate-middle-y me-3 toggle-password">
+                            <i class="fa-solid fa-eye" id="toggleOldPassword"></i>
+                        </span>
                     </div>
-                    <div class="mb-3 password-container">
+                    <div class="mb-3 position-relative">
                         <label for="newPassword" class="form-label">Password Baru</label>
-                        <input type="password" autocomplete="new-password" class="form-control" id="newPassword">
-                        <i class="fa fa-eye password-toggle" id="toggleNewPassword"></i>
+                        <input type="password" class="form-control" id="newPassword" placeholder="Masukkan password baru">
+                        <span class="position-absolute end-0 top-50 translate-middle-y me-3 toggle-password">
+                            <i class="fa-solid fa-eye" id="toggleNewPassword"></i>
+                        </span>
                     </div>
                     <div class="mb-3">
                         <label for="editProfileImage" class="form-label">Foto Profil</label>
@@ -169,10 +178,7 @@
                         <input type="file" class="form-control" id="editSimImage" accept="image/*">
                         <img id="simImagePreview" class="img-fluid mt-2" style="max-width: 100px; max-height: 100px; display: none;" />
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="button" class="btn btn-primary" id="saveChanges" disabled>Simpan Perubahan</button>
-                    </div>
+                    <button type="button" class="btn btn-primary w-100" id="saveChanges">Simpan Perubahan</button>
                 </form>
                 <div id="loadingSpinner" class="d-none text-center mt-3">
                     <div class="spinner"></div>

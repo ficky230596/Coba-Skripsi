@@ -5,7 +5,6 @@ import api
 from dbconnection import db, ensure_indexes
 from bson import ObjectId
 import jwt
-import re
 import os
 from dotenv import load_dotenv
 import hashlib
@@ -19,8 +18,6 @@ from collections import Counter
 import time
 from collections import defaultdict
 from datetime import timedelta  
-from api import cancel_unpaid_transactions
-from threading import Thread 
 import logging  # Impor modul logging
 ensure_indexes()
 load_dotenv()  # Memuat variabel lingkungan dari .env
@@ -29,8 +26,6 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # Konfigurasi logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)  # Inisialisasi logger
-
-
 
 app = Flask(__name__)
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -283,79 +278,7 @@ def reset_password_confirm(token):
         return redirect(url_for('request_reset'))
 
 # Edit Profil
-# Tambahkan endpoint untuk memeriksa ketersediaan email dan nomor telepon
-@app.route('/api/check_email_phone', methods=['POST'])
-def check_email_phone():
-    try:
-        data = request.get_json()
-        username = data.get('username')
-        email = data.get('email')
-        phone = data.get('phone')
-        user_id = data.get('user_id')
-
-        if not user_id:
-            logger.error("User ID diperlukan untuk memeriksa email/phone")
-            return jsonify({'result': 'error', 'msg': 'User ID diperlukan'}), 400
-
-        response = {
-            'username': 'available',
-            'email': 'available',
-            'phone': 'available'
-        }
-
-        # Cek nama pengguna
-        if username:
-            if len(username) < 8:
-                response['username'] = 'invalid'
-                logger.info(f"Username terlalu pendek: {username}")
-            elif not username[0].isalpha():
-                response['username'] = 'invalid'
-                logger.info(f"Username tidak diawali huruf: {username}")
-            elif not username.replace('.', '').replace('_', '').isalnum():
-                response['username'] = 'invalid'
-                logger.info(f"Username tidak valid: {username}")
-            else:
-                existing_username = db.users.find_one({'username': username, 'user_id': {'$ne': user_id}})
-                if existing_username:
-                    response['username'] = 'unavailable'
-                    logger.info(f"Username {username} sudah digunakan oleh user lain")
-
-        # Cek email
-        if email:
-            if '@' not in email:
-                response['email'] = 'invalid'
-                logger.info(f"Email tidak valid, tidak mengandung @: {email}")
-            else:
-                existing_email = db.users.find_one({'email': email, 'user_id': {'$ne': user_id}})
-                if existing_email:
-                    response['email'] = 'unavailable'
-                    logger.info(f"Email {email} sudah digunakan oleh user lain")
-
-        # Cek nomor telepon
-        if phone:
-            # Sanitasi nomor telepon seperti di profile.js
-            cleaned_phone = re.sub(r'[^0-9]', '', phone)
-            if cleaned_phone.startswith('0'):
-                cleaned_phone = cleaned_phone
-            elif cleaned_phone.startswith('62'):
-                cleaned_phone = '0' + cleaned_phone[2:]
-            phone_regex = re.compile(r'^(0|\+62)\d{9,12}$')
-            if not phone_regex.match(phone):
-                response['phone'] = 'invalid'
-                logger.info(f"Nomor telepon tidak valid: {phone}")
-            else:
-                existing_phone = db.users.find_one({'phone': cleaned_phone, 'user_id': {'$ne': user_id}})
-                if existing_phone:
-                    response['phone'] = 'unavailable'
-                    logger.info(f"Nomor telepon {cleaned_phone} sudah digunakan oleh user lain")
-
-        return jsonify(response), 200
-    except Exception as e:
-        logger.error(f"Error saat memeriksa email/phone: {str(e)}")
-        return jsonify({'result': 'error', 'msg': 'Terjadi kesalahan saat memeriksa data'}), 500
-
-# Modifikasi endpoint /profile untuk mendukung perubahan password
-@app.route('/profile', methods=['POST'])
+@app.route('/profile', methods=['GET', 'POST'])
 def update_profile():
     token_receive = request.cookies.get("tokenMain")
     if not token_receive:
@@ -370,176 +293,184 @@ def update_profile():
             logger.error(f"Pengguna tidak ditemukan: user_id={user_id}")
             return jsonify({'result': 'unsuccess', 'msg': 'Pengguna tidak ditemukan'}), 404
 
-        # Periksa batasan 48 jam sejak pengembalian mobil terakhir
-        now = datetime.datetime.now()
-        time_limit = now - timedelta(hours=48)
-        latest_transaction = db.transaction.find_one(
-            {'user_id': user_id, 'status': 'completed'},
-            sort=[('actual_return_date', -1)]
-        )
-        if latest_transaction:
-            try:
-                return_date = datetime.datetime.strptime(
-                    latest_transaction.get('actual_return_date') + ' ' + latest_transaction.get('actual_return_time'),
-                    '%d-%B-%Y %H:%M'
-                )
-                if return_date > time_limit:
-                    logger.warning(f"Pembaruan profil diblokir untuk user_id={user_id}: dalam batas 48 jam")
-                    return jsonify({
-                        'result': 'unsuccess',
-                        'msg': 'Profil hanya dapat diperbarui setelah 48 jam sejak pengembalian mobil terakhir'
-                    }), 403
-            except ValueError:
-                logger.error(f"Format tanggal tidak valid untuk transaksi: {latest_transaction.get('order_id')}")
-                pass
+        if request.method == "GET":
+            if user['verif'] != 'verifed':
+                return redirect(url_for('verify_email'))
+            return render_template('main/profil.html', user_info=user)
 
-        # Ambil data dari form
-        username = request.form.get('username', user['username'])
-        email = request.form.get('email', user['email'])
-        phone = request.form.get('phone', user['phone'])
-        name = request.form.get('name', user['name'])
-        address = request.form.get('address', user.get('address', ''))
-        old_password = request.form.get('old_password')
-        new_password = request.form.get('new_password')
+        elif request.method == "POST":
+            # Periksa rate limit
+            if is_rate_limited(user_id):
+                logger.warning(f"Rate limit exceeded untuk user_id={user_id}")
+                return jsonify({'result': 'unsuccess', 'msg': 'Terlalu banyak permintaan, coba lagi nanti'}), 429
 
-        # Validasi input
-        if not username:
-            logger.error("Username tidak boleh kosong")
-            return jsonify({'result': 'unsuccess', 'msg': 'Username tidak boleh kosong'}), 400
-        if len(username) < 8:
-            logger.error(f"Username terlalu pendek: {username}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Username minimal 8 karakter'}), 400
-        if not username[0].isalpha():
-            logger.error(f"Username tidak diawali huruf: {username}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Username harus diawali dengan huruf'}), 400
-        if not username.replace('.', '').replace('_', '').isalnum():
-            logger.error(f"Username tidak valid: {username}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Username tidak valid'}), 400
-        if not email:
-            logger.error("Email tidak boleh kosong")
-            return jsonify({'result': 'unsuccess', 'msg': 'Email tidak boleh kosong'}), 400
-        if not phone:
-            logger.error("Nomor telepon tidak boleh kosong")
-            return jsonify({'result': 'unsuccess', 'msg': 'Nomor telepon tidak boleh kosong'}), 400
-        if not name:
-            logger.error("Nama lengkap tidak boleh kosong")
-            return jsonify({'result': 'unsuccess', 'msg': 'Nama lengkap tidak boleh kosong'}), 400
+            # Periksa batasan 48 jam sejak pengembalian mobil terakhir
+            now = datetime.datetime.now()
+            time_limit = now - timedelta(hours=48)
+            latest_transaction = db.transaction.find_one(
+                {'user_id': user_id, 'status': 'returned'},
+                sort=[('return_date', -1)]
+            )
+            if latest_transaction and latest_transaction.get('return_date', now) > time_limit:
+                logger.warning(f"Pembaruan profil diblokir untuk user_id={user_id}: dalam batas 48 jam")
+                return jsonify({
+                    'result': 'unsuccess',
+                    'msg': 'Profil hanya dapat diperbarui setelah 48 jam sejak pengembalian mobil terakhir'
+                }), 403
 
-        # Sanitasi nomor telepon
-        cleaned_phone = phone.replace('[^0-9]', '')
-        if cleaned_phone.startswith('0'):
-            cleaned_phone = cleaned_phone
-        elif cleaned_phone.startswith('62'):
-            cleaned_phone = '0' + cleaned_phone[2:]
-        if not cleaned_phone:
-            logger.error("Nomor telepon tidak valid")
-            return jsonify({'result': 'unsuccess', 'msg': 'Nomor telepon tidak valid'}), 400
+            # Ambil data dari form, gunakan nilai lama jika tidak diisi
+            username = request.form.get('username', user['username']).strip()
+            email = request.form.get('email', user['email']).strip()
+            phone = request.form.get('phone', user['phone']).strip()
+            name = request.form.get('name', user['name']).strip()
+            address = request.form.get('address', user.get('address', '')).strip()
+            old_password = request.form.get('old_password')
+            new_password = request.form.get('new_password')
 
-        # Periksa apakah username, email, atau nomor telepon sudah digunakan
-        existing_user = db.users.find_one({'username': username, 'user_id': {'$ne': user_id}})
-        if existing_user:
-            logger.error(f"Username sudah ada: {username}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Username sudah ada'}), 400
-        existing_email = db.users.find_one({'email': email, 'user_id': {'$ne': user_id}})
-        if existing_email:
-            logger.error(f"Email sudah ada: {email}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Email sudah ada'}), 400
-        existing_phone = db.users.find_one({'phone': cleaned_phone, 'user_id': {'$ne': user_id}})
-        if existing_phone:
-            logger.error(f"Nomor telepon sudah ada: {cleaned_phone}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Nomor telepon sudah ada'}), 400
+            # Inisialisasi data pembaruan
+            updates = {}
 
-        # Validasi dan perbarui password jika ada
-        updates = {
-            'username': username,
-            'email': email,
-            'phone': cleaned_phone,
-            'name': name,
-            'address': address
-        }
+            # Validasi hanya untuk field yang diubah
+            if username != user['username']:
+                if not username:
+                    logger.error("Username tidak boleh kosong")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Username tidak boleh kosong'}), 400
+                if len(username) < 8:
+                    logger.error(f"Username terlalu pendek: {username}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Username minimal 8 karakter'}), 400
+                if not username[0].isalpha():
+                    logger.error(f"Username tidak diawali huruf: {username}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Username harus diawali dengan huruf'}), 400
+                if not username.replace('.', '').replace('_', '').isalnum():
+                    logger.error(f"Username tidak valid: {username}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Username tidak valid'}), 400
+                existing_user = db.users.find_one({'username': username, 'user_id': {'$ne': user_id}})
+                if existing_user:
+                    logger.error(f"Username sudah ada: {username}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Username sudah ada'}), 400
+                updates['username'] = username
 
-        if old_password and new_password:
-            # Verifikasi password lama
-            old_pw_hash = hashlib.sha256(old_password.encode('utf-8')).hexdigest()
-            if old_pw_hash != user['password']:
-                logger.error(f"Password lama salah untuk user_id: {user_id}")
-                return jsonify({'result': 'unsuccess', 'msg': 'Password lama salah'}), 400
-            if len(new_password) < 8:
-                logger.error("Password baru terlalu pendek")
-                return jsonify({'result': 'unsuccess', 'msg': 'Password baru minimal 8 karakter'}), 400
-            new_pw_hash = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
-            if new_pw_hash == user['password']:
-                logger.error("Password baru sama dengan password lama")
-                return jsonify({'result': 'unsuccess', 'msg': 'Password baru tidak boleh sama dengan password lama'}), 400
-            updates['password'] = new_pw_hash
+            if email != user['email']:
+                if not email:
+                    logger.error("Email tidak boleh kosong")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Email tidak boleh kosong'}), 400
+                existing_email = db.users.find_one({'email': email, 'user_id': {'$ne': user_id}})
+                if existing_email:
+                    logger.error(f"Email sudah ada: {email}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Email sudah ada'}), 400
+                updates['email'] = email
 
-        # Tangani upload foto profil
-        if 'profile_image' in request.files and request.files['profile_image'].filename != '':
-            profile_image = request.files['profile_image']
-            allowed_extensions = {'jpg', 'jpeg', 'png'}
-            if '.' not in profile_image.filename or profile_image.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-                logger.error(f"Tipe file profil tidak valid: {profile_image.filename}")
-                return jsonify({'result': 'unsuccess', 'msg': 'File profil harus berupa jpg atau png'}), 400
-            profile_upload_folder = os.path.join('static', 'profile_images')
-            os.makedirs(profile_upload_folder, exist_ok=True)
-            profile_image_filename = f"{user_id}_profile.jpg"
-            profile_image_path = os.path.join(profile_upload_folder, profile_image_filename).replace('\\', '/')
-            try:
-                profile_image.save(profile_image_path)
-                if os.path.exists(profile_image_path):
-                    logger.info(f"Foto profil berhasil disimpan di: {profile_image_path}")
-                    if 'profile_image_path' in user and user['profile_image_path'] != profile_image_path and os.path.exists(user['profile_image_path']):
-                        try:
-                            os.remove(user['profile_image_path'])
-                            logger.info(f"Foto profil lama dihapus: {user['profile_image_path']}")
-                        except Exception as e:
-                            logger.error(f"Gagal menghapus foto profil lama {user['profile_image_path']}: {str(e)}")
-                    updates['profile_image_path'] = profile_image_path
-                else:
-                    logger.error(f"Gagal menyimpan foto profil: File tidak ditemukan di {profile_image_path}")
+            if phone != user['phone']:
+                cleaned_phone = phone.replace("+", "")
+                if cleaned_phone.startswith("0"):
+                    cleaned_phone = "62" + cleaned_phone[1:]
+                elif not cleaned_phone.startswith("62"):
+                    cleaned_phone = "62" + cleaned_phone
+                if not cleaned_phone.isdigit() or len(cleaned_phone) < 11 or len(cleaned_phone) > 15:
+                    logger.error(f"Nomor telepon tidak valid: {cleaned_phone}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Nomor telepon tidak valid'}), 400
+                existing_phone = db.users.find_one({'phone': cleaned_phone, 'user_id': {'$ne': user_id}})
+                if existing_phone:
+                    logger.error(f"Nomor telepon sudah ada: {cleaned_phone}")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Nomor telepon sudah ada'}), 400
+                updates['phone'] = cleaned_phone
+
+            if name != user['name']:
+                if not name:
+                    logger.error("Nama lengkap tidak boleh kosong")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Nama lengkap tidak boleh kosong'}), 400
+                updates['name'] = name
+
+            if address != user.get('address', ''):
+                updates['address'] = address
+
+            # Validasi kata sandi jika diisi
+            if old_password or new_password:
+                if not old_password:
+                    logger.error("Kata sandi lama harus diisi untuk mengganti kata sandi")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Kata sandi lama harus diisi'}), 400
+                if not new_password:
+                    logger.error("Kata sandi baru harus diisi")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Kata sandi baru harus diisi'}), 400
+                old_password_hash = hashlib.sha256(old_password.encode("utf-8")).hexdigest()
+                if old_password_hash != user['password']:
+                    logger.error("Kata sandi lama salah")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Kata sandi lama salah'}), 400
+                if len(new_password) < 8:
+                    logger.error("Kata sandi baru terlalu pendek")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Kata sandi baru minimal 8 karakter'}), 400
+                new_password_hash = hashlib.sha256(new_password.encode("utf-8")).hexdigest()
+                if new_password_hash == user['password']:
+                    logger.error("Kata sandi baru sama dengan kata sandi lama")
+                    return jsonify({'result': 'unsuccess', 'msg': 'Kata sandi baru tidak boleh sama dengan kata sandi lama'}), 400
+                updates['password'] = new_password_hash
+
+            # Tangani upload foto profil
+            if 'profile_image' in request.files and request.files['profile_image'].filename != '':
+                profile_image = request.files['profile_image']
+                if not profile_image.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    logger.error("File profil bukan gambar")
+                    return jsonify({'result': 'unsuccess', 'msg': 'File profil harus berupa gambar (jpg, png)'}), 400
+                profile_upload_folder = os.path.join('static', 'profile_images')
+                os.makedirs(profile_upload_folder, exist_ok=True)
+                profile_image_filename = f"{user_id}_profile.jpg"
+                profile_image_path = os.path.join(profile_upload_folder, profile_image_filename).replace('\\', '/')
+                try:
+                    profile_image.save(profile_image_path)
+                    if os.path.exists(profile_image_path):
+                        logger.info(f"Foto profil berhasil disimpan di: {profile_image_path}")
+                        if 'profile_image_path' in user and user['profile_image_path'] != profile_image_path and os.path.exists(user['profile_image_path']):
+                            try:
+                                os.remove(user['profile_image_path'])
+                                logger.info(f"Foto profil lama dihapus: {user['profile_image_path']}")
+                            except Exception as e:
+                                logger.error(f"Gagal menghapus foto profil lama {user['profile_image_path']}: {str(e)}")
+                        updates['profile_image_path'] = profile_image_path
+                    else:
+                        logger.error(f"Gagal menyimpan foto profil: File tidak ditemukan di {profile_image_path}")
+                        return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto profil'}), 500
+                except Exception as e:
+                    logger.error(f'Gagal menyimpan foto profil: {str(e)}')
                     return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto profil'}), 500
-            except Exception as e:
-                logger.error(f'Gagal menyimpan foto profil: {str(e)}')
-                return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto profil'}), 500
 
-        # Tangani upload foto SIM
-        if 'image' in request.files and request.files['image'].filename != '':
-            sim_image = request.files['image']
-            allowed_extensions = {'jpg', 'jpeg', 'png'}
-            if '.' not in sim_image.filename or sim_image.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-                logger.error(f"Tipe file SIM tidak valid: {sim_image.filename}")
-                return jsonify({'result': 'unsuccess', 'msg': 'File SIM harus berupa jpg atau png'}), 400
-            sim_upload_folder = os.path.join('static', 'Gambar', 'identitas')
-            os.makedirs(sim_upload_folder, exist_ok=True)
-            sim_image_filename = f"{user_id}_sim.jpg"
-            sim_image_path = os.path.join(sim_upload_folder, sim_image_filename).replace('\\', '/')
-            try:
-                sim_image.save(sim_image_path)
-                if os.path.exists(sim_image_path):
-                    logger.info(f"Foto SIM berhasil disimpan di: {sim_image_path}")
-                    if 'image_path' in user and user['image_path'] != sim_image_path and os.path.exists(user['image_path']):
-                        try:
-                            os.remove(user['image_path'])
-                            logger.info(f"Foto SIM lama dihapus: {user['image_path']}")
-                        except Exception as e:
-                            logger.error(f"Gagal menghapus foto SIM lama {user['image_path']}: {str(e)}")
-                    updates['image_path'] = sim_image_path
-                else:
-                    logger.error(f"Gagal menyimpan foto SIM: File tidak ditemukan di {sim_image_path}")
+            # Tangani upload foto SIM
+            if 'image' in request.files and request.files['image'].filename != '':
+                sim_image = request.files['image']
+                if not sim_image.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    logger.error("File SIM bukan gambar")
+                    return jsonify({'result': 'unsuccess', 'msg': 'File SIM harus berupa gambar (jpg, png)'}), 400
+                sim_upload_folder = os.path.join('static', 'Gambar', 'identitas')
+                os.makedirs(sim_upload_folder, exist_ok=True)
+                sim_image_filename = f"{user_id}_sim.jpg"
+                sim_image_path = os.path.join(sim_upload_folder, sim_image_filename).replace('\\', '/')
+                try:
+                    sim_image.save(sim_image_path)
+                    if os.path.exists(sim_image_path):
+                        logger.info(f"Foto SIM berhasil disimpan di: {sim_image_path}")
+                        if 'image_path' in user and user['image_path'] != sim_image_path and os.path.exists(user['image_path']):
+                            try:
+                                os.remove(user['image_path'])
+                                logger.info(f"Foto SIM lama dihapus: {user['image_path']}")
+                            except Exception as e:
+                                logger.error(f"Gagal menghapus foto SIM lama {user['image_path']}: {str(e)}")
+                        updates['image_path'] = sim_image_path
+                    else:
+                        logger.error(f"Gagal menyimpan foto SIM: File tidak ditemukan di {sim_image_path}")
+                        return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto SIM'}), 500
+                except Exception as e:
+                    logger.error(f'Gagal menyimpan foto SIM: {str(e)}')
                     return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto SIM'}), 500
-            except Exception as e:
-                logger.error(f'Gagal menyimpan foto SIM: {str(e)}')
-                return jsonify({'result': 'unsuccess', 'msg': 'Gagal menyimpan foto SIM'}), 500
 
-        # Perbarui data pengguna di database
-        try:
+            # Jika tidak ada perubahan, kembalikan pesan bahwa tidak ada yang diperbarui
+            if not updates and not ('profile_image' in request.files and request.files['profile_image'].filename != '') and not ('image' in request.files and request.files['image'].filename != ''):
+                logger.info(f"Tidak ada perubahan untuk user_id: {user_id}")
+                return jsonify({'result': 'success', 'msg': 'Tidak ada perubahan yang dilakukan'})
+
+            # Perbarui data pengguna di database
             db.users.update_one({'user_id': user_id}, {'$set': updates})
             logger.info(f"Profil diperbarui untuk user_id: {user_id}")
-            return jsonify({'result': 'success', 'msg': 'Profil berhasil diperbarui'})
-        except Exception as e:
-            logger.error(f"Error saat memperbarui profil di database: {str(e)}")
-            return jsonify({'result': 'unsuccess', 'msg': 'Terjadi kesalahan saat memperbarui profil'}), 500
 
+            return jsonify({'result': 'success', 'msg': 'Profil berhasil diperbarui'})
     except jwt.ExpiredSignatureError:
         logger.error("Token telah kadaluarsa")
         return jsonify({'result': 'unsuccess', 'msg': 'Token telah kadaluarsa'}), 401
@@ -549,6 +480,74 @@ def update_profile():
     except Exception as e:
         logger.error(f"Error saat memperbarui profil: {str(e)}")
         return jsonify({'result': 'unsuccess', 'msg': 'Terjadi kesalahan saat memperbarui profil'}), 500
+
+# Endpoint untuk memeriksa keunikan username, email, dan nomor telepon
+@app.route('/api/check_unique', methods=['POST'])
+def check_unique():
+    token_receive = request.cookies.get("tokenMain")
+    if not token_receive:
+        return jsonify({'result': 'unsuccess', 'msg': 'Token tidak ditemukan'}), 401
+
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        user_id = payload['user_id']
+        data = request.get_json()
+        username = data.get('username')
+        email = data.get('email')
+        phone = data.get('phone')
+
+        response = {'result': 'success', 'errors': {}}
+
+        # Periksa username
+        if username:
+            if len(username) < 8:
+                response['result'] = 'unsuccess'
+                response['errors']['username'] = 'Username minimal 8 karakter'
+            elif not username[0].isalpha():
+                response['result'] = 'unsuccess'
+                response['errors']['username'] = 'Username harus diawali dengan huruf'
+            elif not username.replace('.', '').replace('_', '').isalnum():
+                response['result'] = 'unsuccess'
+                response['errors']['username'] = 'Username tidak valid'
+            else:
+                existing_user = db.users.find_one({'username': username, 'user_id': {'$ne': user_id}})
+                if existing_user:
+                    response['result'] = 'unsuccess'
+                    response['errors']['username'] = 'Username sudah ada'
+
+        # Periksa email
+        if email:
+            existing_email = db.users.find_one({'email': email, 'user_id': {'$ne': user_id}})
+            if existing_email:
+                response['result'] = 'unsuccess'
+                response['errors']['email'] = 'Email sudah ada'
+
+        # Periksa nomor telepon
+        if phone:
+            cleaned_phone = phone.replace("+", "")
+            if cleaned_phone.startswith("0"):
+                cleaned_phone = "62" + cleaned_phone[1:]
+            elif not cleaned_phone.startswith("62"):
+                cleaned_phone = "62" + cleaned_phone
+            if not cleaned_phone.isdigit() or len(cleaned_phone) < 11 or len(cleaned_phone) > 15:
+                response['result'] = 'unsuccess'
+                response['errors']['phone'] = 'Nomor telepon tidak valid'
+            else:
+                existing_phone = db.users.find_one({'phone': cleaned_phone, 'user_id': {'$ne': user_id}})
+                if existing_phone:
+                    response['result'] = 'unsuccess'
+                    response['errors']['phone'] = 'Nomor telepon sudah ada'
+
+        if response['result'] == 'success':
+            return jsonify({'result': 'success', 'msg': 'Semua data tersedia'})
+        return jsonify(response), 400
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'unsuccess', 'msg': 'Token telah kadaluarsa'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'result': 'unsuccess', 'msg': 'Token tidak valid'}), 401
+    except Exception as e:
+        logger.error(f"Error saat memeriksa keunikan: {str(e)}")
+        return jsonify({'result': 'unsuccess', 'msg': 'Terjadi kesalahan'}), 500
 
 @app.route('/maps')
 def maps():
@@ -691,12 +690,10 @@ def payment(id):
     try:
         data = db.transaction.find_one({'order_id': id})
 
-        # CEK JIKA TRANSAKSI SUDAH DIBATALKAN
         if not data or data['status'] == 'canceled':
             flash('Transaksi telah dibatalkan dan tidak dapat dilanjutkan.', 'error')
             return redirect(url_for('transaksiUser'))
 
-        # CEK MOBIL SUDAH DISEWA ATAU BELUM
         data_mobil = db.dataMobil.find_one({'id_mobil': data['id_mobil']})
         if data_mobil['status'] in ['Diproses', 'Digunakan']:
             canceltransaction(order_id=data['order_id'], msg='Sudah ada transaksi lain')
@@ -706,9 +703,18 @@ def payment(id):
         user_info = db.users.find_one({"user_id": payload["user_id"]})
         if user_info['verif'] != 'verifed':
             return redirect(url_for('verify_email'))
-        
-        token = data['transaction_token']
-        return render_template('main/payment.html', data=data, user_info=user_info)
+
+        # Tambahan untuk deteksi lingkungan
+        is_sandbox = os.environ.get("MIDTRANS_ENV") == "sandbox"
+        client_key = os.environ.get("MIDTRANS_CLIENT_KEY")
+
+        return render_template(
+            'main/payment.html',
+            data=data,
+            user_info=user_info,
+            is_sandbox=is_sandbox,
+            client_key=client_key
+        )
 
     except jwt.ExpiredSignatureError:
         msg = createSecreteMassage('Akses transaksi login terlebih dahulu')
@@ -716,6 +722,7 @@ def payment(id):
     except jwt.exceptions.DecodeError:
         msg = createSecreteMassage('Akses transaksi login terlebih dahulu')
         return redirect(url_for('login', msg=msg))
+
 
     
 @app.route('/detail-mobil')
@@ -1146,7 +1153,7 @@ app.register_blueprint(api.api)
 # if __name__ == '__main__':
 #     app.run(debug=True)
  
-Thread(target=cancel_unpaid_transactions, daemon=True).start() 
+ 
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

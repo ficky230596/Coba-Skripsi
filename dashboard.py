@@ -438,7 +438,7 @@ def addData_post():
         extension = file.filename.split('.')[-1]
         upload_date = datetime.now().strftime('%Y-%M-%d-%H-%m-%S')
         gambar_name = f'mobil-{upload_date}.{extension}'
-        file.save(f'static/gambar/{gambar_name}')
+        file.save(f'static/gambar/mobil/{gambar_name}')
     except:
         return jsonify({
             'result' : 'unsucces',
@@ -479,11 +479,11 @@ def updateData_post():
 
     try:
         file = request.files['gambar']
-        os.remove(f"static/gambar/{data['gambar']}")
+        os.remove(f"static/gambar/mobil/{data['gambar']}")
         extension = file.filename.split('.')[-1]
         upload_date = datetime.now().strftime('%Y-%M-%d-%H-%m-%S')
         gambar_name = f'mobil-{upload_date}.{extension}'
-        file.save(f'static/gambar/{gambar_name}')
+        file.save(f'static/gambar/mobil/{gambar_name}')
     except:
         gambar_name = data['gambar']
 

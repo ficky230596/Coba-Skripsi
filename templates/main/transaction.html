@@ -2,18 +2,12 @@
 {% block title %}| Transaksi{% endblock %}
 
 {% block js %}
-<!-- Tambahkan SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Pastikan jQuery dimuat sebelum transaction.js -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<!-- Tambahkan toastr jika belum ada -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="{{ url_for('static', filename='js/main/transaction.js') }}"></script>
 {% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main/transaksi.css') }}">
+
 {% endblock %}
 
 {% block content %}
@@ -77,10 +71,9 @@
                                         <span class="label">Tanggal Kembali</span>
                                         <span class="value">
                                             {% if dt.status == 'canceled' %}
-                                            - <!-- Tampilkan kosong untuk transaksi yang dibatalkan -->
+                                            -  <!-- Tampilkan kosong untuk transaksi yang dibatalkan -->
                                             {% elif dt.actual_return_date %}
-                                            {{ dt.actual_return_date }} {{ dt.actual_return_time }} {{
-                                            dt.status_pengembalian | default('') }}
+                                            {{ dt.actual_return_date }} {{ dt.actual_return_time }} {{ dt.status_pengembalian | default('') }}
                                             {% else %}
                                             Belum dikembalikan
                                             {% endif %}
@@ -112,13 +105,6 @@
                                         <span class="label">Status</span>
                                         <span class="value">{{ dt.status }}</span>
                                     </li>
-                                    {% if dt.status == 'unpaid' %}
-                                    <li class="d-flex align-items-center mb-3">
-                                        <span class="label">Batas Waktu Pembayaran</span>
-                                        <span class="value" id="countdown-{{dt.order_id}}">10 menit dari pembuatan
-                                            transaksi</span>
-                                    </li>
-                                    {% endif %}
                                     {% if dt.pesan %}
                                     <li class="d-flex align-items-center mb-3">
                                         <span class="label">Alasan</span>

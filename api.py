@@ -17,8 +17,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dbconnection import db
 from func import createSecretMessage, canceltransaction
-from func import canceltransaction, check_midtrans_status, send_fonnte_message
-
 
 # Memuat variabel lingkungan dari .env
 load_dotenv()
@@ -206,59 +204,76 @@ def send_fonnte_message(
 
 # ------------------- Transaction Management -------------------
 
+
 def cancel_unpaid_transactions():
-    """Membatalkan transaksi yang belum dibayar setelah waktu tertentu."""
+    # Inisialisasi Snap dengan lingkungan dinamis
+    is_production = MIDTRANS_ENV == "production"
+    snap = midtransclient.Snap(
+        is_production=is_production,
+        server_key=os.environ.get("MIDTRANS_SERVER_KEY"),
+        client_key=os.environ.get("MIDTRANS_CLIENT_KEY"),
+    )
     while True:
-        try:
-            now = datetime.now()
-            time_limit = now - timedelta(minutes=10)  # 2 menit untuk pengujian
-            logger.info(f"Memeriksa transaksi yang belum dibayar sebelum {time_limit}")
-            unpaid_transactions = db.transaction.find(
-                {
-                    "status": "unpaid",
-                    "created_at": {"$lt": time_limit},
-                }
-            )
-            count = db.transaction.count_documents(
-                {
-                    "status": "unpaid",
-                    "created_at": {"$lt": time_limit},
-                }
-            )
-            logger.info(f"Ditemukan {count} transaksi yang belum dibayar")
-            if count == 0:
-                logger.info("Tidak ada transaksi yang memenuhi kriteria untuk dibatalkan")
-
-            for txn in unpaid_transactions:
-                order_id = txn["order_id"]
-                logger.info(f"Memproses transaksi {order_id}, created_at: {txn['created_at']}")
-
-                # Batalkan transaksi dengan aksi expire
-                try:
-                    canceltransaction(order_id=order_id, msg="Dibatalkan karena waktu pembayaran habis", action="expire")
-                    logger.info(f"Transaksi {order_id} di-expire melalui func.canceltransaction")
-                except Exception as e:
-                    logger.error(f"Gagal meng-expire transaksi {order_id}: {str(e)}")
+        now = datetime.now()
+        time_limit = now - timedelta(minutes=5)
+        unpaid_transactions = db.transaction.find(
+            {
+                "status": "unpaid",
+                "created_at": {"$lt": time_limit},
+            }
+        )
+        for txn in unpaid_transactions:
+            order_id = txn["order_id"]
+            try:
+                # Cek status transaksi di Midtrans
+                status = snap.transactions.status(order_id)
+                if status.get("transaction_status") in ["settlement", "capture"]:
+                    logger.info(
+                        f"Transaksi {order_id} sudah dibayar, lewati pembatalan"
+                    )
+                    db.transaction.update_one(
+                        {"order_id": order_id},
+                        {"$set": {"status": "sudah bayar", "status_mobil": "Diproses"}},
+                    )
                     continue
+                # Batalkan transaksi di Midtrans
+                snap.transactions.cancel(order_id)
+                logger.info(f"Transaksi {order_id} dibatalkan di Midtrans")
+            except Exception as e:
+                logger.error(
+                    f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(e)}"
+                )
+                continue
 
-                # Hapus dari antrian prioritas
-                with queue_lock:
-                    temp_queue = PriorityQueue()
-                    while not priority_queue.is_empty():
-                        queued_transaction = priority_queue.pop()
-                        if queued_transaction["order_id"] != order_id:
-                            temp_queue.push(queued_transaction)
-                    while not temp_queue.is_empty():
-                        priority_queue.push(temp_queue.pop())
-                    logger.info(f"Transaksi {order_id} dihapus dari antrian prioritas")
+            # Hapus dari antrian prioritas
+            with queue_lock:
+                temp_queue = PriorityQueue()
+                while not priority_queue.is_empty():
+                    queued_transaction = priority_queue.pop()
+                    if queued_transaction["order_id"] != order_id:
+                        temp_queue.push(queued_transaction)
+                while not temp_queue.is_empty():
+                    priority_queue.push(temp_queue.pop())
 
-        except Exception as e:
-            logger.error(f"Error di cancel_unpaid_transactions: {str(e)}")
-        sleep(10)  # Interval 10 detik untuk pengujian
-
-# Mulai thread untuk membatalkan transaksi yang belum dibayar
-Thread(target=cancel_unpaid_transactions, daemon=True).start()
-
+            # Perbarui database
+            db.transaction.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "canceled", "status_mobil": None}},
+            )
+            db.dataMobil.update_one(
+                {"id_mobil": txn["id_mobil"]},
+                {
+                    "$set": {
+                        "status_transaksi": None,
+                        "order_id": None,
+                        "status": "Tersedia",
+                    }
+                },
+            )
+            logger.info(
+                f"Transaksi {order_id} dibatalkan karena tidak dibayar dalam 10 menit."
+            )
+        sleep(60)  # Interval 60 detik untuk mengurangi beban server
 
 
 # ------------------- API Endpoints -------------------
@@ -495,7 +510,7 @@ def create_transaction():
             "phone": data_user["phone"],
         },
         "enabled_payments": ["credit_card", "bank_transfer", "gopay", "shopeepay"],
-        "expiry": {"duration": 15, "unit": "minutes"},
+        "expiry": {"duration": 10, "unit": "minutes"},
     }
 
     try:
@@ -644,7 +659,6 @@ def create_transaction():
 
 @api.route("/api/midtrans-notification", methods=["POST"])
 def midtrans_notification():
-    """Menangani notifikasi dari Midtrans untuk semua status transaksi."""
     notification = request.get_json()
     order_id = notification.get("order_id")
     status_code = notification.get("status_code")
@@ -668,8 +682,8 @@ def midtrans_notification():
         logger.error(f"Transaksi tidak ditemukan untuk order_id: {order_id}")
         return jsonify({"status": "error", "message": "Transaksi tidak ditemukan"}), 404
 
-    # Cek apakah status sudah final
-    if transaction["status"] in ["sudah bayar", "canceled", "expired", "completed"]:
+    # Cek apakah status sudah diperbarui
+    if transaction["status"] in ["sudah bayar", "canceled", "completed"]:
         logger.info(
             f"Transaksi {order_id} sudah diproses dengan status {transaction['status']}, lewati notifikasi"
         )
@@ -680,17 +694,11 @@ def midtrans_notification():
             200,
         )
 
-    # Perbarui status transaksi berdasarkan Midtrans
+    # Perbarui status transaksi
     if transaction_status == "settlement":
         db.transaction.update_one(
             {"order_id": order_id},
-            {
-                "$set": {
-                    "status": "sudah bayar",
-                    "status_mobil": "Diproses",
-                    "midtrans_status": "settlement",
-                }
-            },
+            {"$set": {"status": "sudah bayar", "status_mobil": "Diproses"}},
         )
         db.dataMobil.update_one(
             {"id_mobil": transaction["id_mobil"]},
@@ -700,26 +708,43 @@ def midtrans_notification():
         if user:
             user_success = send_fonnte_message(
                 phone=user["phone"],
-                order_id=order_id,
-                message=(
-                    f"Transaksi Anda (Order ID: {order_id}) telah berhasil dibayar!\n"
-                    f"Detail Pemesanan:\n"
-                    f"- Penyewa: {transaction.get('penyewa', '')}\n"
-                    f"- Mobil: {transaction.get('item', '')} ({transaction.get('type_mobil', '')})\n"
-                    f"- Total: Rp {transaction.get('total', 0):,}\n"
-                    f"Terima kasih atas pembayaran Anda!"
-                ),
+                order_id=transaction["order_id"],
+                penyewa=transaction.get("penyewa", ""),
+                item=transaction.get("item", ""),
+                type_mobil=transaction.get("type_mobil", ""),
+                plat=transaction.get("plat", ""),
+                bahan_bakar=transaction.get("bahan_bakar", ""),
+                seat=transaction.get("seat", ""),
+                transmisi=transaction.get("transmisi", ""),
+                total=transaction.get("total", 0),
+                lama_rental=transaction.get("lama_rental", ""),
+                biaya_sopir=transaction.get("biaya_sopir", 0),
+                gunakan_pengantaran=transaction.get("gunakan_pengantaran", False),
+                delivery_cost=transaction.get("delivery_cost", 0),
+                delivery_location=transaction.get("delivery_location", ""),
+                delivery_lat=transaction.get("delivery_lat", None),
+                delivery_lon=transaction.get("delivery_lon", None),
+                is_admin=False,
             )
             admin_success = send_fonnte_message(
                 phone=ADMIN_PHONE,
-                order_id=order_id,
-                message=(
-                    f"Transaksi baru berhasil dibayar (Order ID: {order_id}).\n"
-                    f"Penyewa: {transaction.get('penyewa', '')}\n"
-                    f"Mobil: {transaction.get('item', '')} ({transaction.get('type_mobil', '')})\n"
-                    f"Total: Rp {transaction.get('total', 0):,}\n"
-                    "Harap proses pemesanan ini segera."
-                ),
+                order_id=transaction["order_id"],
+                penyewa=transaction.get("penyewa", ""),
+                item=transaction.get("item", ""),
+                type_mobil=transaction.get("type_mobil", ""),
+                plat=transaction.get("plat", ""),
+                bahan_bakar=transaction.get("bahan_bakar", ""),
+                seat=transaction.get("seat", ""),
+                transmisi=transaction.get("transmisi", ""),
+                total=transaction.get("total", 0),
+                lama_rental=transaction.get("lama_rental", ""),
+                biaya_sopir=transaction.get("biaya_sopir", 0),
+                gunakan_pengantaran=transaction.get("gunakan_pengantaran", False),
+                delivery_cost=transaction.get("delivery_cost", 0),
+                delivery_location=transaction.get("delivery_location", ""),
+                delivery_lat=transaction.get("delivery_lat", None),
+                delivery_lon=transaction.get("delivery_lon", None),
+                is_admin=True,
             )
             logger.info(
                 f"Notifikasi WhatsApp untuk order_id {order_id}: user={user_success}, admin={admin_success}"
@@ -727,18 +752,9 @@ def midtrans_notification():
         else:
             logger.error(f"Pengguna tidak ditemukan untuk order_id: {order_id}")
     elif transaction_status in ["cancel", "expire", "deny"]:
-        new_status = "canceled" if transaction_status == "cancel" else "expired"
         db.transaction.update_one(
             {"order_id": order_id},
-            {
-                "$set": {
-                    "status": new_status,
-                    "status_mobil": None,
-                    "midtrans_status": transaction_status,
-                    "expired": datetime.utcnow(),
-                    "pesan": f"Transaksi {transaction_status} oleh Midtrans",
-                }
-            },
+            {"$set": {"status": "canceled", "status_mobil": None}},
         )
         db.dataMobil.update_one(
             {"id_mobil": transaction["id_mobil"]},
@@ -750,33 +766,12 @@ def midtrans_notification():
                 }
             },
         )
-        user = db.users.find_one({"user_id": transaction["user_id"]})
-        if user:
-            send_fonnte_message(
-                phone=user["phone"],
-                order_id=order_id,
-                message=(
-                    f"Transaksi Anda (Order ID: {order_id}) telah {new_status}.\n"
-                    f"Alasan: {transaction_status} oleh Midtrans.\n"
-                    "Silakan hubungi kami jika ada pertanyaan."
-                ),
-            )
-        send_fonnte_message(
-            phone=ADMIN_PHONE,
-            order_id=order_id,
-            message=(
-                f"Transaksi {new_status} (Order ID: {order_id}).\n"
-                f"Penyewa: {transaction.get('penyewa', 'Tidak diketahui')}\n"
-                f"Alasan: {transaction_status} oleh Midtrans"
-            ),
-        )
         logger.info(
-            f"Transaksi {order_id} di{new_status} karena status Midtrans: {transaction_status}"
+            f"Transaksi {order_id} dibatalkan karena status: {transaction_status}"
         )
     elif transaction_status == "pending":
         db.transaction.update_one(
-            {"order_id": order_id},
-            {"$set": {"status": "unpaid", "midtrans_status": "pending"}},
+            {"order_id": order_id}, {"$set": {"status": "unpaid"}}
         )
         logger.info(f"Transaksi {order_id} masih dalam status pending")
 
@@ -1005,7 +1000,6 @@ def confirmKembali():
 
 @api.route("/api/check_transaction_status/<order_id>", methods=["GET"])
 def check_transaction_status_by_id(order_id):
-    """Memeriksa status transaksi berdasarkan order_id."""
     logger.info(f"Memeriksa status transaksi untuk order_id: {order_id}")
     try:
         # Cari transaksi berdasarkan order_id
@@ -1014,61 +1008,14 @@ def check_transaction_status_by_id(order_id):
             logger.error(f"Transaksi tidak ditemukan untuk order_id: {order_id}")
             return jsonify({"result": "error", "msg": "Transaksi tidak ditemukan"}), 404
 
-        # Periksa status di Midtrans
-        midtrans_result = check_midtrans_status(order_id)
-        if midtrans_result["status"] == "success" and midtrans_result["transaction_status"]:
-            # Update status database jika berbeda
-            if transaction["midtrans_status"] != midtrans_result["transaction_status"]:
-                if midtrans_result["transaction_status"] == "settlement":
-                    db.transaction.update_one(
-                        {"order_id": order_id},
-                        {
-                            "$set": {
-                                "status": "sudah bayar",
-                                "status_mobil": "Diproses",
-                                "midtrans_status": "settlement",
-                            }
-                        },
-                    )
-                    db.dataMobil.update_one(
-                        {"id_mobil": transaction["id_mobil"]},
-                        {"$set": {"status": "Diproses", "status_transaksi": "Diproses"}},
-                    )
-                elif midtrans_result["transaction_status"] in ["cancel", "expire", "deny"]:
-                    new_status = "canceled" if midtrans_result["transaction_status"] == "cancel" else "expired"
-                    db.transaction.update_one(
-                        {"order_id": order_id},
-                        {
-                            "$set": {
-                                "status": new_status,
-                                "status_mobil": None,
-                                "midtrans_status": midtrans_result["transaction_status"],
-                                "expired": datetime.utcnow(),
-                                "pesan": f"Transaksi {midtrans_result['transaction_status']} oleh Midtrans",
-                            }
-                        },
-                    )
-                    db.dataMobil.update_one(
-                        {"id_mobil": transaction["id_mobil"]},
-                        {
-                            "$set": {
-                                "status_transaksi": None,
-                                "order_id": None,
-                                "status": "Tersedia",
-                            }
-                        },
-                    )
-
         # Kembalikan status transaksi
-        updated_transaction = db.transaction.find_one({"order_id": order_id})
         return (
             jsonify(
                 {
                     "result": "success",
-                    "order_id": updated_transaction["order_id"],
-                    "status": updated_transaction.get("status", ""),
-                    "status_mobil": updated_transaction.get("status_mobil", ""),
-                    "midtrans_status": updated_transaction.get("midtrans_status", ""),
+                    "order_id": transaction["order_id"],
+                    "status": transaction.get("status", ""),
+                    "status_mobil": transaction.get("status_mobil", ""),
                     "msg": "Status transaksi ditemukan",
                 }
             ),
@@ -1147,7 +1094,6 @@ def searchDahboard():
 
 @api.route("/api/cancelPayment", methods=["POST"])
 def cancelPayment():
-    """Membatalkan transaksi secara manual oleh pengguna."""
     global priority_queue
     order_id = request.form.get("order_id")
     token_receive = request.cookies.get("tokenMain")
@@ -1217,8 +1163,8 @@ def cancelPayment():
                 priority_queue.push(temp_queue.pop())
         logger.info(f"Transaksi {order_id} dihapus dari antrian prioritas")
 
-        # Panggil fungsi canceltransaction dengan aksi cancel
-        canceltransaction(order_id=order_id, msg="Dibatalkan oleh pengguna", action="cancel")
+        # Panggil fungsi canceltransaction
+        canceltransaction(order_id=order_id, msg="Dibatalkan sendiri")
 
         logger.info(f"Transaksi {order_id} berhasil dibatalkan oleh user {user_id}")
         return (
@@ -1492,7 +1438,7 @@ def delete_mobil():
     id_mobil = request.form.get("id_mobil")
     data = db.dataMobil.find_one({"id_mobil": id_mobil})
     db.dataMobil.delete_one({"id_mobil": id_mobil})
-    os.remove(f"static/gambar/{data['gambar']}")
+    os.remove(f"static/gambar/mobil/{data['gambar']}")
     return jsonify({"result": "success"})
 
 
