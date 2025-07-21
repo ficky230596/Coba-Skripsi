@@ -37,12 +37,14 @@ api = Blueprint("api", __name__)
 
 
 class PriorityQueue:
+
     def __init__(self):
         self._queue = []
         self._index = 0
 
     def push(self, transaction):
-        heapq.heappush(self._queue, (-transaction["total"], self._index, transaction))
+        heapq.heappush(self._queue,
+                       (-transaction["total"], self._index, transaction))
         self._index += 1
 
     def pop(self):
@@ -97,11 +99,8 @@ def send_fonnte_message(
     elif not cleaned_phone.startswith("62"):
         cleaned_phone = "62" + cleaned_phone
 
-    if (
-        not cleaned_phone.isdigit()
-        or len(cleaned_phone) < 10
-        or len(cleaned_phone) > 15
-    ):
+    if (not cleaned_phone.isdigit() or len(cleaned_phone) < 10
+            or len(cleaned_phone) > 15):
         logger.error(f"Nomor telepon tidak valid: {phone} -> {cleaned_phone}")
         return False
 
@@ -113,16 +112,12 @@ def send_fonnte_message(
     total_formatted = f"{total:,}".replace(",", ".")
     sopir_status = "Ya" if biaya_sopir > 0 else "Tidak"
     pengantaran_status = "Ya" if gunakan_pengantaran else "Tidak"
-    delivery_cost_formatted = (
-        f"Rp {delivery_cost:,}".replace(",", ".") if gunakan_pengantaran else "Tidak"
-    )
+    delivery_cost_formatted = (f"Rp {delivery_cost:,}".replace(",", ".")
+                               if gunakan_pengantaran else "Tidak")
 
     message_lines = [
-        (
-            f"Notifikasi Pemesanan Baru (Order ID: {order_id}):"
-            if is_admin
-            else f"Transaksi Anda (Order ID: {order_id}) telah berhasil dibayar!"
-        ),
+        (f"Notifikasi Pemesanan Baru (Order ID: {order_id}):" if is_admin else
+         f"Transaksi Anda (Order ID: {order_id}) telah berhasil dibayar!"),
         "Detail Pemesanan:",
         f"- Penyewa: {penyewa}",
         f"- Item: {item}",
@@ -138,16 +133,13 @@ def send_fonnte_message(
     ]
 
     if gunakan_pengantaran:
-        message_lines.extend(
-            [
-                f"- Biaya Pengantaran: {delivery_cost_formatted}",
-                f"- Lokasi Pengantaran: {delivery_location}",
-            ]
-        )
+        message_lines.extend([
+            f"- Biaya Pengantaran: {delivery_cost_formatted}",
+            f"- Lokasi Pengantaran: {delivery_location}",
+        ])
         if delivery_lat is not None and delivery_lon is not None:
             google_maps_link = (
-                f"https://www.google.com/maps?q={delivery_lat},{delivery_lon}"
-            )
+                f"https://www.google.com/maps?q={delivery_lat},{delivery_lon}")
             message_lines.append(f"- Tautan Google Maps: {google_maps_link}")
 
     message_lines.append("- Status Pembayaran: Sudah Bayar")
@@ -160,12 +152,10 @@ def send_fonnte_message(
                 "Mobil akan diantar ke lokasi yang Anda tentukan. Terima kasih!"
             )
         else:
-            message_lines.extend(
-                [
-                    "Silakan ke kantor untuk mengambil mobil pada tanggal dan waktu yang ditentukan.",
-                    "Jangan lupa bawa bukti pembayaran. Terima kasih!",
-                ]
-            )
+            message_lines.extend([
+                "Silakan ke kantor untuk mengambil mobil pada tanggal dan waktu yang ditentukan.",
+                "Jangan lupa bawa bukti pembayaran. Terima kasih!",
+            ])
 
     message = "\n".join(message_lines)
 
@@ -180,16 +170,17 @@ def send_fonnte_message(
     }
 
     session = requests.Session()
-    retries = Retry(
-        total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
-    )
+    retries = Retry(total=3,
+                    backoff_factor=1,
+                    status_forcelist=[429, 500, 502, 503, 504])
     session.mount("https://", HTTPAdapter(max_retries=retries))
 
     try:
         response = session.post(url, headers=headers, data=data, timeout=10)
         response_json = response.json()
         if response.status_code == 200 and response_json.get("status") is True:
-            logger.info(f"Pesan berhasil dikirim ke {cleaned_phone}: {response_json}")
+            logger.info(
+                f"Pesan berhasil dikirim ke {cleaned_phone}: {response_json}")
             return True
         logger.error(
             f"Gagal mengirim pesan ke {cleaned_phone}: {response_json.get('reason', 'Unknown error')}"
@@ -216,24 +207,31 @@ def cancel_unpaid_transactions():
     while True:
         now = datetime.now()
         time_limit = now - timedelta(minutes=5)
-        unpaid_transactions = db.transaction.find(
-            {
-                "status": "unpaid",
-                "created_at": {"$lt": time_limit},
-            }
-        )
+        unpaid_transactions = db.transaction.find({
+            "status": "unpaid",
+            "created_at": {
+                "$lt": time_limit
+            },
+        })
         for txn in unpaid_transactions:
             order_id = txn["order_id"]
             try:
                 # Cek status transaksi di Midtrans
                 status = snap.transactions.status(order_id)
-                if status.get("transaction_status") in ["settlement", "capture"]:
+                if status.get("transaction_status") in [
+                        "settlement", "capture"
+                ]:
                     logger.info(
                         f"Transaksi {order_id} sudah dibayar, lewati pembatalan"
                     )
                     db.transaction.update_one(
                         {"order_id": order_id},
-                        {"$set": {"status": "sudah bayar", "status_mobil": "Diproses"}},
+                        {
+                            "$set": {
+                                "status": "sudah bayar",
+                                "status_mobil": "Diproses"
+                            }
+                        },
                     )
                     continue
                 # Batalkan transaksi di Midtrans
@@ -258,7 +256,10 @@ def cancel_unpaid_transactions():
             # Perbarui database
             db.transaction.update_one(
                 {"order_id": order_id},
-                {"$set": {"status": "canceled", "status_mobil": None}},
+                {"$set": {
+                    "status": "canceled",
+                    "status_mobil": None
+                }},
             )
             db.dataMobil.update_one(
                 {"id_mobil": txn["id_mobil"]},
@@ -287,14 +288,16 @@ def reverse_geocode():
         lon = request.args.get("lon")
         if not lat or not lon:
             return (
-                jsonify(
-                    {"status": "error", "message": "Parameter lat dan lon diperlukan"}
-                ),
+                jsonify({
+                    "status": "error",
+                    "message": "Parameter lat dan lon diperlukan"
+                }),
                 400,
             )
 
         headers = {
-            "User-Agent": "RentalMobilApp/1.0 (fickyrahanubun@gmail.com)"  # Ganti dengan email Anda
+            "User-Agent":
+            "RentalMobilApp/1.0 (fickyrahanubun@gmail.com)"  # Ganti dengan email Anda
         }
         url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
         response = requests.get(url, headers=headers, timeout=5)
@@ -303,9 +306,10 @@ def reverse_geocode():
     except requests.RequestException as e:
         logger.error(f"Error saat reverse geocoding: {str(e)}")
         return (
-            jsonify(
-                {"status": "error", "message": f"Gagal mendapatkan alamat: {str(e)}"}
-            ),
+            jsonify({
+                "status": "error",
+                "message": f"Gagal mendapatkan alamat: {str(e)}"
+            }),
             500,
         )
 
@@ -317,12 +321,16 @@ def search_geocode():
         query = request.args.get("q")
         if not query:
             return (
-                jsonify({"status": "error", "message": "Parameter query diperlukan"}),
+                jsonify({
+                    "status": "error",
+                    "message": "Parameter query diperlukan"
+                }),
                 400,
             )
 
         headers = {
-            "User-Agent": "RentalMobilApp/1.0 (fickyrahanubun@gmail.com)"  # Ganti dengan email Anda
+            "User-Agent":
+            "RentalMobilApp/1.0 (fickyrahanubun@gmail.com)"  # Ganti dengan email Anda
         }
         url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(query)}&limit=1"
         response = requests.get(url, headers=headers, timeout=5)
@@ -331,7 +339,10 @@ def search_geocode():
     except requests.RequestException as e:
         logger.error(f"Error saat pencarian lokasi: {str(e)}")
         return (
-            jsonify({"status": "error", "message": f"Gagal mencari lokasi: {str(e)}"}),
+            jsonify({
+                "status": "error",
+                "message": f"Gagal mencari lokasi: {str(e)}"
+            }),
             500,
         )
 
@@ -344,22 +355,14 @@ def create_transaction():
     hari = request.form.get("hari")
     gunakan_sopir = request.form.get("gunakan_sopir") == "true"
     gunakan_pengantaran = request.form.get("gunakan_pengantaran") == "true"
-    delivery_cost = (
-        int(request.form.get("delivery_cost", 0)) if gunakan_pengantaran else 0
-    )
-    delivery_location = (
-        request.form.get("delivery_location", "") if gunakan_pengantaran else ""
-    )
-    delivery_lat = (
-        float(request.form.get("delivery_lat"))
-        if request.form.get("delivery_lat")
-        else None
-    )
-    delivery_lon = (
-        float(request.form.get("delivery_lon"))
-        if request.form.get("delivery_lon")
-        else None
-    )
+    delivery_cost = (int(request.form.get("delivery_cost", 0))
+                     if gunakan_pengantaran else 0)
+    delivery_location = (request.form.get("delivery_location", "")
+                         if gunakan_pengantaran else "")
+    delivery_lat = (float(request.form.get("delivery_lat"))
+                    if request.form.get("delivery_lat") else None)
+    delivery_lon = (float(request.form.get("delivery_lon"))
+                    if request.form.get("delivery_lon") else None)
     client_total_harga = int(request.form.get("total_harga", 0))
 
     # Validasi input
@@ -369,36 +372,42 @@ def create_transaction():
             raise ValueError("Hari harus lebih besar dari 0")
     except (TypeError, ValueError):
         logger.error(f"Jumlah hari tidak valid: {hari}")
-        return jsonify({"status": "error", "message": "Jumlah hari tidak valid."}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Jumlah hari tidak valid."
+        }), 400
 
     if not id_mobil or not user_id:
-        logger.error(f"Data tidak lengkap: id_mobil={id_mobil}, user_id={user_id}")
-        return jsonify({"status": "error", "message": "Data tidak lengkap."}), 400
+        logger.error(
+            f"Data tidak lengkap: id_mobil={id_mobil}, user_id={user_id}")
+        return jsonify({
+            "status": "error",
+            "message": "Data tidak lengkap."
+        }), 400
 
     valid_delivery_costs = [0, 100000, 200000]
     if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
         logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Biaya pengantaran tidak valid. Harus 0, 100000, atau 200000.",
-                }
-            ),
+            jsonify({
+                "status":
+                "error",
+                "message":
+                "Biaya pengantaran tidak valid. Harus 0, 100000, atau 200000.",
+            }),
             400,
         )
 
-    if gunakan_pengantaran and (
-        not delivery_location or not delivery_lat or not delivery_lon
-    ):
+    if gunakan_pengantaran and (not delivery_location or not delivery_lat
+                                or not delivery_lon):
         logger.error("Lokasi pengantaran atau koordinat tidak lengkap.")
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Lokasi pengantaran dan koordinat (lat, lon) harus diisi.",
-                }
-            ),
+            jsonify({
+                "status":
+                "error",
+                "message":
+                "Lokasi pengantaran dan koordinat (lat, lon) harus diisi.",
+            }),
             400,
         )
 
@@ -411,9 +420,10 @@ def create_transaction():
             f"Mobil atau pengguna tidak ditemukan: id_mobil={id_mobil}, user_id={user_id}"
         )
         return (
-            jsonify(
-                {"status": "error", "message": "Mobil atau pengguna tidak ditemukan."}
-            ),
+            jsonify({
+                "status": "error",
+                "message": "Mobil atau pengguna tidak ditemukan."
+            }),
             404,
         )
 
@@ -422,43 +432,47 @@ def create_transaction():
         logger.error(
             f"Mobil sudah digunakan atau dalam proses pembayaran: id_mobil={id_mobil}"
         )
-        return jsonify({"status": "error", "message": "Mobil tidak tersedia."}), 409
+        return jsonify({
+            "status": "error",
+            "message": "Mobil tidak tersedia."
+        }), 409
 
     # Cek transaksi yang belum dibayar atau sedang berlangsung
-    unpaid_transaction = db.transaction.find_one(
-        {"user_id": user_id, "status": "unpaid"}
-    )
+    unpaid_transaction = db.transaction.find_one({
+        "user_id": user_id,
+        "status": "unpaid"
+    })
     if unpaid_transaction:
         logger.info(
             f"Ditemukan transaksi belum dibayar untuk user_id {user_id}: order_id {unpaid_transaction['order_id']}"
         )
         return (
-            jsonify(
-                {
-                    "status": "unpaid_transaction",
-                    "message": "Anda memiliki transaksi yang belum dibayar. Batalkan transaksi sebelumnya terlebih dahulu.",
-                }
-            ),
+            jsonify({
+                "status":
+                "unpaid_transaction",
+                "message":
+                "Anda memiliki transaksi yang belum dibayar. Batalkan transaksi sebelumnya terlebih dahulu.",
+            }),
             400,
         )
 
-    active_transaction = db.transaction.find_one(
-        {
-            "user_id": user_id,
-            "status": {"$in": ["ongoing", "sudah bayar", "Diproses", "Digunakan"]},
-        }
-    )
+    active_transaction = db.transaction.find_one({
+        "user_id": user_id,
+        "status": {
+            "$in": ["ongoing", "sudah bayar", "Diproses", "Digunakan"]
+        },
+    })
     if active_transaction:
         logger.info(
             f"Ditemukan transaksi aktif untuk user_id {user_id}: order_id {active_transaction['order_id']}, status {active_transaction['status']}"
         )
         return (
-            jsonify(
-                {
-                    "status": "active_rental",
-                    "message": "Anda masih memiliki mobil yang sedang disewa. Selesaikan rental sebelum menyewa mobil lain.",
-                }
-            ),
+            jsonify({
+                "status":
+                "active_rental",
+                "message":
+                "Anda masih memiliki mobil yang sedang disewa. Selesaikan rental sebelum menyewa mobil lain.",
+            }),
             400,
         )
 
@@ -474,12 +488,12 @@ def create_transaction():
             f"Total harga tidak sesuai: client={client_total_harga}, server={total_harga}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Total harga tidak sesuai dengan perhitungan server.",
-                }
-            ),
+            jsonify({
+                "status":
+                "error",
+                "message":
+                "Total harga tidak sesuai dengan perhitungan server.",
+            }),
             400,
         )
 
@@ -503,14 +517,21 @@ def create_transaction():
     )
 
     param = {
-        "transaction_details": {"order_id": order_id, "gross_amount": total_harga},
+        "transaction_details": {
+            "order_id": order_id,
+            "gross_amount": total_harga
+        },
         "customer_details": {
             "first_name": data_user["name"],
             "email": data_user["email"],
             "phone": data_user["phone"],
         },
-        "enabled_payments": ["credit_card", "bank_transfer", "gopay", "shopeepay"],
-        "expiry": {"duration": 10, "unit": "minutes"},
+        "enabled_payments":
+        ["credit_card", "bank_transfer", "gopay", "shopeepay"],
+        "expiry": {
+            "duration": 10,
+            "unit": "minutes"
+        },
     }
 
     try:
@@ -520,13 +541,11 @@ def create_transaction():
     except Exception as e:
         logger.error(f"❌ Gagal buat transaksi Midtrans: {e}")
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Gagal membuat transaksi Midtrans.",
-                    "detail": str(e),
-                }
-            ),
+            jsonify({
+                "status": "error",
+                "message": "Gagal membuat transaksi Midtrans.",
+                "detail": str(e),
+            }),
             500,
         )
 
@@ -584,11 +603,9 @@ def create_transaction():
 
         while not priority_queue.is_empty():
             queued_transaction = priority_queue.pop()
-            if (
-                queued_transaction["id_mobil"] == id_mobil
-                and queued_transaction["order_id"] != order_id
-                and queued_transaction["status"] in ["unpaid", "sudah bayar"]
-            ):
+            if (queued_transaction["id_mobil"] == id_mobil
+                    and queued_transaction["order_id"] != order_id and
+                    queued_transaction["status"] in ["unpaid", "sudah bayar"]):
                 conflicting_orders.append(queued_transaction)
             else:
                 temp_queue.push(queued_transaction)
@@ -610,24 +627,30 @@ def create_transaction():
                     db.transaction.delete_one({"order_id": order_id})
                     db.dataMobil.update_one(
                         {"id_mobil": id_mobil},
-                        {"$set": {"status_transaksi": None, "status": "Tersedia"}},
+                        {
+                            "$set": {
+                                "status_transaksi": None,
+                                "status": "Tersedia"
+                            }
+                        },
                     )
                     # Kembalikan transaksi lain ke antrian
                     while not temp_queue.is_empty():
                         priority_queue.push(temp_queue.pop())
                     for conflict in conflicting_orders:
-                        if conflict["order_id"] != selected_transaction["order_id"]:
+                        if conflict["order_id"] != selected_transaction[
+                                "order_id"]:
                             priority_queue.push(conflict)
                     logger.info(
                         f"Transaksi {order_id} dibatalkan karena ada transaksi lain dengan nilai lebih tinggi"
                     )
                     return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "message": f"Mohon maaf mobil tidak tersedia lagi {id_mobil}",
-                            }
-                        ),
+                        jsonify({
+                            "status":
+                            "error",
+                            "message":
+                            f"Mohon maaf mobil tidak tersedia lagi {id_mobil}",
+                        }),
                         409,
                     )
 
@@ -635,7 +658,12 @@ def create_transaction():
         db.transaction.insert_one(transaksi)
         db.dataMobil.update_one(
             {"id_mobil": id_mobil},
-            {"$set": {"status_transaksi": "pembayaran", "status": "pembayaran"}},
+            {
+                "$set": {
+                    "status_transaksi": "pembayaran",
+                    "status": "pembayaran"
+                }
+            },
         )
 
         # Kembalikan transaksi lain ke antrian
@@ -646,13 +674,11 @@ def create_transaction():
                 priority_queue.push(conflict)
 
     return (
-        jsonify(
-            {
-                "status": "success",
-                "id": order_id,
-                "transaction_token": transaction_token,
-            }
-        ),
+        jsonify({
+            "status": "success",
+            "id": order_id,
+            "transaction_token": transaction_token,
+        }),
         200,
     )
 
@@ -665,117 +691,58 @@ def midtrans_notification():
     gross_amount = notification.get("gross_amount")
     transaction_status = notification.get("transaction_status")
 
-    # Verifikasi tanda tangan
+    # Verifikasi signature
     server_key = os.environ.get("MIDTRANS_SERVER_KEY")
     signature_key = notification.get("signature_key")
     expected_signature = hashlib.sha512(
-        f"{order_id}{status_code}{gross_amount}{server_key}".encode()
-    ).hexdigest()
+        f"{order_id}{status_code}{gross_amount}{server_key}".encode(
+        )).hexdigest()
 
     if signature_key != expected_signature:
-        logger.error(f"Invalid signature for order_id: {order_id}")
-        return jsonify({"status": "error", "message": "Invalid signature"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Invalid signature"
+        }), 400
 
-    # Periksa transaksi
     transaction = db.transaction.find_one({"order_id": order_id})
     if not transaction:
-        logger.error(f"Transaksi tidak ditemukan untuk order_id: {order_id}")
-        return jsonify({"status": "error", "message": "Transaksi tidak ditemukan"}), 404
+        return jsonify({
+            "status": "error",
+            "message": "Transaksi tidak ditemukan"
+        }), 404
 
-    # Cek apakah status sudah diperbarui
+    # Jangan proses jika sudah final
     if transaction["status"] in ["sudah bayar", "canceled", "completed"]:
-        logger.info(
-            f"Transaksi {order_id} sudah diproses dengan status {transaction['status']}, lewati notifikasi"
-        )
-        return (
-            jsonify(
-                {"status": "success", "message": "Notifikasi sudah diproses sebelumnya"}
-            ),
-            200,
-        )
+        return jsonify({"status": "success", "message": "Sudah diproses"}), 200
 
-    # Perbarui status transaksi
-    if transaction_status == "settlement":
-        db.transaction.update_one(
-            {"order_id": order_id},
-            {"$set": {"status": "sudah bayar", "status_mobil": "Diproses"}},
-        )
-        db.dataMobil.update_one(
-            {"id_mobil": transaction["id_mobil"]},
-            {"$set": {"status": "Diproses", "status_transaksi": "Diproses"}},
-        )
-        user = db.users.find_one({"user_id": transaction["user_id"]})
-        if user:
-            user_success = send_fonnte_message(
-                phone=user["phone"],
-                order_id=transaction["order_id"],
-                penyewa=transaction.get("penyewa", ""),
-                item=transaction.get("item", ""),
-                type_mobil=transaction.get("type_mobil", ""),
-                plat=transaction.get("plat", ""),
-                bahan_bakar=transaction.get("bahan_bakar", ""),
-                seat=transaction.get("seat", ""),
-                transmisi=transaction.get("transmisi", ""),
-                total=transaction.get("total", 0),
-                lama_rental=transaction.get("lama_rental", ""),
-                biaya_sopir=transaction.get("biaya_sopir", 0),
-                gunakan_pengantaran=transaction.get("gunakan_pengantaran", False),
-                delivery_cost=transaction.get("delivery_cost", 0),
-                delivery_location=transaction.get("delivery_location", ""),
-                delivery_lat=transaction.get("delivery_lat", None),
-                delivery_lon=transaction.get("delivery_lon", None),
-                is_admin=False,
-            )
-            admin_success = send_fonnte_message(
-                phone=ADMIN_PHONE,
-                order_id=transaction["order_id"],
-                penyewa=transaction.get("penyewa", ""),
-                item=transaction.get("item", ""),
-                type_mobil=transaction.get("type_mobil", ""),
-                plat=transaction.get("plat", ""),
-                bahan_bakar=transaction.get("bahan_bakar", ""),
-                seat=transaction.get("seat", ""),
-                transmisi=transaction.get("transmisi", ""),
-                total=transaction.get("total", 0),
-                lama_rental=transaction.get("lama_rental", ""),
-                biaya_sopir=transaction.get("biaya_sopir", 0),
-                gunakan_pengantaran=transaction.get("gunakan_pengantaran", False),
-                delivery_cost=transaction.get("delivery_cost", 0),
-                delivery_location=transaction.get("delivery_location", ""),
-                delivery_lat=transaction.get("delivery_lat", None),
-                delivery_lon=transaction.get("delivery_lon", None),
-                is_admin=True,
-            )
-            logger.info(
-                f"Notifikasi WhatsApp untuk order_id {order_id}: user={user_success}, admin={admin_success}"
-            )
-        else:
-            logger.error(f"Pengguna tidak ditemukan untuk order_id: {order_id}")
+    if transaction_status == "pending":
+        db.transaction.update_one({"order_id": order_id},
+                                  {"$set": {
+                                      "status": "unpaid"
+                                  }})
     elif transaction_status in ["cancel", "expire", "deny"]:
         db.transaction.update_one(
             {"order_id": order_id},
-            {"$set": {"status": "canceled", "status_mobil": None}},
-        )
-        db.dataMobil.update_one(
-            {"id_mobil": transaction["id_mobil"]},
-            {
-                "$set": {
-                    "status_transaksi": None,
-                    "order_id": None,
-                    "status": "Tersedia",
-                }
-            },
-        )
+            {"$set": {
+                "status": "canceled",
+                "status_mobil": None
+            }})
+        db.dataMobil.update_one({"id_mobil": transaction["id_mobil"]}, {
+            "$set": {
+                "status_transaksi": None,
+                "status": "Tersedia",
+                "order_id": None
+            }
+        })
+    elif transaction_status == "settlement":
         logger.info(
-            f"Transaksi {order_id} dibatalkan karena status: {transaction_status}"
+            f"Status settlement diterima, tapi dilewati (ditangani di frontend)."
         )
-    elif transaction_status == "pending":
-        db.transaction.update_one(
-            {"order_id": order_id}, {"$set": {"status": "unpaid"}}
-        )
-        logger.info(f"Transaksi {order_id} masih dalam status pending")
 
-    return jsonify({"status": "success", "message": "Notifikasi diproses"}), 200
+    return jsonify({
+        "status": "success",
+        "message": "Notifikasi diproses"
+    }), 200
 
 
 @api.route("/api/transaction-success", methods=["POST"])
@@ -792,12 +759,10 @@ def transaction_success():
             f"Parameter idcar atau orderid tidak lengkap: idcar={idcar}, orderid={orderid}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Parameter idcar atau orderid tidak lengkap",
-                }
-            ),
+            jsonify({
+                "status": "error",
+                "message": "Parameter idcar atau orderid tidak lengkap",
+            }),
             400,
         )
 
@@ -805,7 +770,10 @@ def transaction_success():
     transaction = db.transaction.find_one({"order_id": orderid})
     if not transaction:
         logger.error(f"Transaksi tidak ditemukan untuk order_id: {orderid}")
-        return jsonify({"status": "error", "message": "Transaksi tidak ditemukan"}), 404
+        return jsonify({
+            "status": "error",
+            "message": "Transaksi tidak ditemukan"
+        }), 404
 
     # Validasi bahwa transaksi belum dibatalkan
     if transaction["status"] != "unpaid":
@@ -813,12 +781,10 @@ def transaction_success():
             f"Transaksi {orderid} tidak dalam status unpaid: {transaction['status']}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Transaksi tidak valid atau sudah diproses",
-                }
-            ),
+            jsonify({
+                "status": "error",
+                "message": "Transaksi tidak valid atau sudah diproses",
+            }),
             400,
         )
 
@@ -830,12 +796,10 @@ def transaction_success():
             f"Pengguna atau nomor telepon tidak ditemukan untuk user_id: {user_id}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Pengguna atau nomor telepon tidak ditemukan",
-                }
-            ),
+            jsonify({
+                "status": "error",
+                "message": "Pengguna atau nomor telepon tidak ditemukan",
+            }),
             404,
         )
 
@@ -844,9 +808,10 @@ def transaction_success():
         "order_id": orderid,
     }
     db.dataMobil.update_one({"id_mobil": idcar}, {"$set": data_update})
-    db.transaction.update_one(
-        {"order_id": orderid}, {"$set": {"status": "sudah bayar"}}
-    )
+    db.transaction.update_one({"order_id": orderid},
+                              {"$set": {
+                                  "status": "sudah bayar"
+                              }})
 
     # Kirim notifikasi WhatsApp
     user_success = send_fonnte_message(
@@ -897,22 +862,24 @@ def transaction_success():
     }
     msg = (
         "Transaksi berhasil dan pesan WhatsApp telah dikirim ke pengguna dan admin"
-        if user_success and admin_success
-        else "Transaksi berhasil, tetapi beberapa pesan WhatsApp gagal dikirim"
-    )
+        if user_success and admin_success else
+        "Transaksi berhasil, tetapi beberapa pesan WhatsApp gagal dikirim")
     logger.info(
         f"Status pengiriman WhatsApp untuk order_id {orderid}: {whatsapp_status}"
     )
     return (
-        jsonify(
-            {
-                "status": "success",
-                "message": msg,
-                "whatsapp_status": whatsapp_status,
-                "selected_order_id": orderid,
-                "gunakan_pengantaran": transaction.get("gunakan_pengantaran", False),
-            }
-        ),
+        jsonify({
+            "status":
+            "success",
+            "message":
+            msg,
+            "whatsapp_status":
+            whatsapp_status,
+            "selected_order_id":
+            orderid,
+            "gunakan_pengantaran":
+            transaction.get("gunakan_pengantaran", False),
+        }),
         200,
     )
 
@@ -925,15 +892,22 @@ def confirmKembali():
     data_mobil = db.dataMobil.find_one({"id_mobil": id_mobil})
     if not data_mobil:
         logger.error(f"Mobil tidak ditemukan: id_mobil={id_mobil}")
-        return jsonify({"result": "unsuccess", "msg": "Mobil tidak ditemukan"}), 404
+        return jsonify({
+            "result": "unsuccess",
+            "msg": "Mobil tidak ditemukan"
+        }), 404
 
     # Ambil data transaksi
-    data_transaksi = db.transaction.find_one({"order_id": data_mobil.get("order_id")})
+    data_transaksi = db.transaction.find_one(
+        {"order_id": data_mobil.get("order_id")})
     if not data_transaksi:
         logger.error(
             f"Transaksi tidak ditemukan untuk order_id: {data_mobil.get('order_id')}"
         )
-        return jsonify({"result": "unsuccess", "msg": "Transaksi tidak ditemukan"}), 404
+        return jsonify({
+            "result": "unsuccess",
+            "msg": "Transaksi tidak ditemukan"
+        }), 404
 
     # Log status transaksi sebelum pembaruan
     logger.info(
@@ -947,7 +921,8 @@ def confirmKembali():
     actual_return_time = now.strftime("%H:%M")
 
     # Bandingkan dengan waktu seharusnya
-    end_rent_str = data_transaksi.get("end_rent") + " " + data_transaksi.get("end_time")
+    end_rent_str = data_transaksi.get("end_rent") + " " + data_transaksi.get(
+        "end_time")
     end_rent = datetime.strptime(end_rent_str, "%d-%B-%Y %H:%M")
 
     # Hitung selisih waktu dalam menit
@@ -979,11 +954,18 @@ def confirmKembali():
     # Update status mobil
     db.dataMobil.update_one(
         {"id_mobil": id_mobil},
-        {"$set": {"status": "Tersedia", "status_transaksi": None, "order_id": None}},
+        {
+            "$set": {
+                "status": "Tersedia",
+                "status_transaksi": None,
+                "order_id": None
+            }
+        },
     )
 
     # Log status transaksi setelah pembaruan
-    updated_transaction = db.transaction.find_one({"order_id": data_mobil["order_id"]})
+    updated_transaction = db.transaction.find_one(
+        {"order_id": data_mobil["order_id"]})
     logger.info(
         f"Status transaksi setelah pengembalian untuk order_id {data_transaksi['order_id']}: "
         f"status={updated_transaction['status']}, status_mobil={updated_transaction.get('status_mobil')}"
@@ -993,7 +975,10 @@ def confirmKembali():
         f"Transaksi {data_transaksi['order_id']} selesai, pengguna siap diarahkan ke rating."
     )
     return (
-        jsonify({"result": "success", "status_pengembalian": status_pengembalian}),
+        jsonify({
+            "result": "success",
+            "status_pengembalian": status_pengembalian
+        }),
         200,
     )
 
@@ -1005,25 +990,31 @@ def check_transaction_status_by_id(order_id):
         # Cari transaksi berdasarkan order_id
         transaction = db.transaction.find_one({"order_id": order_id})
         if not transaction:
-            logger.error(f"Transaksi tidak ditemukan untuk order_id: {order_id}")
-            return jsonify({"result": "error", "msg": "Transaksi tidak ditemukan"}), 404
+            logger.error(
+                f"Transaksi tidak ditemukan untuk order_id: {order_id}")
+            return jsonify({
+                "result": "error",
+                "msg": "Transaksi tidak ditemukan"
+            }), 404
 
         # Kembalikan status transaksi
         return (
-            jsonify(
-                {
-                    "result": "success",
-                    "order_id": transaction["order_id"],
-                    "status": transaction.get("status", ""),
-                    "status_mobil": transaction.get("status_mobil", ""),
-                    "msg": "Status transaksi ditemukan",
-                }
-            ),
+            jsonify({
+                "result": "success",
+                "order_id": transaction["order_id"],
+                "status": transaction.get("status", ""),
+                "status_mobil": transaction.get("status_mobil", ""),
+                "msg": "Status transaksi ditemukan",
+            }),
             200,
         )
     except Exception as e:
-        logger.error(f"Error saat memeriksa status transaksi {order_id}: {str(e)}")
-        return jsonify({"result": "error", "msg": f"Terjadi kesalahan: {str(e)}"}), 500
+        logger.error(
+            f"Error saat memeriksa status transaksi {order_id}: {str(e)}")
+        return jsonify({
+            "result": "error",
+            "msg": f"Terjadi kesalahan: {str(e)}"
+        }), 500
 
 
 @api.route("/api/check_transaction_status", methods=["GET"])
@@ -1034,49 +1025,56 @@ def check_transaction_status():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("user_id")
         if not user_id:
-            return jsonify({"result": "error", "msg": "User ID tidak valid"}), 401
+            return jsonify({
+                "result": "error",
+                "msg": "User ID tidak valid"
+            }), 401
 
         # Cari transaksi yang selesai dan siap untuk rating
-        transaction = db.transaction.find_one(
-            {"user_id": user_id, "status_mobil": "selesai", "rating_prompted": True}
-        )
+        transaction = db.transaction.find_one({
+            "user_id": user_id,
+            "status_mobil": "selesai",
+            "rating_prompted": True
+        })
 
         if not transaction:
             return (
-                jsonify(
-                    {
-                        "result": "no_action",
-                        "msg": "Tidak ada transaksi yang perlu rating",
-                    }
-                ),
+                jsonify({
+                    "result": "no_action",
+                    "msg": "Tidak ada transaksi yang perlu rating",
+                }),
                 200,
             )
 
         # Periksa apakah rating sudah diberikan
-        rating_exists = db.ratings.find_one(
-            {"car_id": transaction["id_mobil"], "user_id": user_id}
-        )
+        rating_exists = db.ratings.find_one({
+            "car_id": transaction["id_mobil"],
+            "user_id": user_id
+        })
         if rating_exists:
             db.transaction.update_one(
                 {"order_id": transaction["order_id"]},
-                {"$set": {"rating_prompted": False}},
+                {"$set": {
+                    "rating_prompted": False
+                }},
             )
             return (
-                jsonify({"result": "no_action", "msg": "Rating sudah diberikan"}),
+                jsonify({
+                    "result": "no_action",
+                    "msg": "Rating sudah diberikan"
+                }),
                 200,
             )
 
         # Kembalikan car_id untuk redirect
         return (
-            jsonify(
-                {
-                    "result": "redirect",
-                    "car_id": transaction["id_mobil"],
-                    "user_id": user_id,
-                    "order_id": transaction["order_id"],
-                    "msg": "Transaksi selesai, arahkan ke halaman rating",
-                }
-            ),
+            jsonify({
+                "result": "redirect",
+                "car_id": transaction["id_mobil"],
+                "user_id": user_id,
+                "order_id": transaction["order_id"],
+                "msg": "Transaksi selesai, arahkan ke halaman rating",
+            }),
             200,
         )
     except jwt.ExpiredSignatureError:
@@ -1088,7 +1086,10 @@ def check_transaction_status():
 @api.route("/api/search-dashboard")
 def searchDahboard():
     search = request.args.get("search")
-    data = db.dataMobil.find({"merek": {"$regex": search, "$options": "i"}}, {"_id": 0})
+    data = db.dataMobil.find({"merek": {
+        "$regex": search,
+        "$options": "i"
+    }}, {"_id": 0})
     return jsonify(list(data))
 
 
@@ -1100,14 +1101,20 @@ def cancelPayment():
 
     if not order_id:
         logger.error("Order ID tidak diberikan.")
-        return jsonify({"result": "failed", "message": "Order ID tidak diberikan"}), 400
+        return jsonify({
+            "result": "failed",
+            "message": "Order ID tidak diberikan"
+        }), 400
 
     try:
         # Validasi token JWT
         if not token_receive:
             logger.error("Token tidak ditemukan untuk pembatalan transaksi")
             return (
-                jsonify({"result": "failed", "message": "Token tidak ditemukan"}),
+                jsonify({
+                    "result": "failed",
+                    "message": "Token tidak ditemukan"
+                }),
                 401,
             )
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=["HS256"])
@@ -1118,7 +1125,10 @@ def cancelPayment():
         if not transaction:
             logger.error(f"Transaksi tidak ditemukan: order_id={order_id}")
             return (
-                jsonify({"result": "failed", "message": "Transaksi tidak ditemukan"}),
+                jsonify({
+                    "result": "failed",
+                    "message": "Transaksi tidak ditemukan"
+                }),
                 404,
             )
 
@@ -1128,12 +1138,12 @@ def cancelPayment():
                 f"Pengguna {user_id} tidak berhak membatalkan transaksi {order_id}"
             )
             return (
-                jsonify(
-                    {
-                        "result": "failed",
-                        "message": "Anda tidak berhak membatalkan transaksi ini",
-                    }
-                ),
+                jsonify({
+                    "result":
+                    "failed",
+                    "message":
+                    "Anda tidak berhak membatalkan transaksi ini",
+                }),
                 403,
             )
 
@@ -1143,12 +1153,12 @@ def cancelPayment():
                 f"Transaksi {order_id} tidak dapat dibatalkan karena status bukan 'unpaid': {transaction['status']}"
             )
             return (
-                jsonify(
-                    {
-                        "result": "failed",
-                        "message": f"Transaksi tidak dapat dibatalkan: status {transaction['status']}",
-                    }
-                ),
+                jsonify({
+                    "result":
+                    "failed",
+                    "message":
+                    f"Transaksi tidak dapat dibatalkan: status {transaction['status']}",
+                }),
                 400,
             )
 
@@ -1166,34 +1176,37 @@ def cancelPayment():
         # Panggil fungsi canceltransaction
         canceltransaction(order_id=order_id, msg="Dibatalkan sendiri")
 
-        logger.info(f"Transaksi {order_id} berhasil dibatalkan oleh user {user_id}")
+        logger.info(
+            f"Transaksi {order_id} berhasil dibatalkan oleh user {user_id}")
         return (
-            jsonify({"result": "success", "message": "Transaksi berhasil dibatalkan"}),
+            jsonify({
+                "result": "success",
+                "message": "Transaksi berhasil dibatalkan"
+            }),
             200,
         )
     except jwt.ExpiredSignatureError:
         logger.error("Token kadaluarsa untuk pembatalan transaksi")
         return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Sesi kadaluarsa, silakan login kembali",
-                }
-            ),
+            jsonify({
+                "result": "failed",
+                "message": "Sesi kadaluarsa, silakan login kembali",
+            }),
             401,
         )
     except jwt.InvalidTokenError:
         logger.error("Token tidak valid untuk pembatalan transaksi")
-        return jsonify({"result": "failed", "message": "Token tidak valid"}), 401
+        return jsonify({
+            "result": "failed",
+            "message": "Token tidak valid"
+        }), 401
     except Exception as e:
         logger.error(f"Gagal membatalkan transaksi {order_id}: {str(e)}")
         return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": f"Gagal membatalkan transaksi: {str(e)}",
-                }
-            ),
+            jsonify({
+                "result": "failed",
+                "message": f"Gagal membatalkan transaksi: {str(e)}",
+            }),
             500,
         )
 
@@ -1209,29 +1222,47 @@ def reg():
 
     # Validasi input
     if not username:
-        return jsonify({"result": "ejected", "msg": "Username tidak boleh kosong"})
+        return jsonify({
+            "result": "ejected",
+            "msg": "Username tidak boleh kosong"
+        })
     if len(username) < 8:
-        return jsonify({"result": "ejected", "msg": "Username minimal 8 karakter"})
+        return jsonify({
+            "result": "ejected",
+            "msg": "Username minimal 8 karakter"
+        })
     if not username[0].isalpha():
-        return jsonify(
-            {"result": "ejected", "msg": "Username harus diawali dengan huruf"}
-        )
+        return jsonify({
+            "result": "ejected",
+            "msg": "Username harus diawali dengan huruf"
+        })
     if not username.replace(".", "").replace("_", "").isalnum():
         return jsonify({"result": "ejected", "msg": "Username tidak valid"})
     if not email:
-        return jsonify({"result": "ejectedEmail", "msg": "Email tidak boleh kosong"})
+        return jsonify({
+            "result": "ejectedEmail",
+            "msg": "Email tidak boleh kosong"
+        })
     if not password:
-        return jsonify({"result": "ejectedPW", "msg": "Password tidak boleh kosong"})
+        return jsonify({
+            "result": "ejectedPW",
+            "msg": "Password tidak boleh kosong"
+        })
     if len(password) < 8:
-        return jsonify({"result": "ejectedPW", "msg": "Password minimal 8 karakter"})
+        return jsonify({
+            "result": "ejectedPW",
+            "msg": "Password minimal 8 karakter"
+        })
     if not phone:
-        return jsonify(
-            {"result": "ejectedPhone", "msg": "Nomor telepon tidak boleh kosong"}
-        )
+        return jsonify({
+            "result": "ejectedPhone",
+            "msg": "Nomor telepon tidak boleh kosong"
+        })
     if not name:
-        return jsonify(
-            {"result": "ejectedName", "msg": "Nama lengkap tidak boleh kosong"}
-        )
+        return jsonify({
+            "result": "ejectedName",
+            "msg": "Nama lengkap tidak boleh kosong"
+        })
     if db.users.find_one({"username": username}):
         return jsonify({"result": "ejected", "msg": "Username sudah ada"})
     if db.users.find_one({"email": email}):
@@ -1242,39 +1273,42 @@ def reg():
         return jsonify({"result": "ejected", "msg": "Harap unggah foto SIM"})
     file = request.files["image"]
     if file.filename == "":
-        return jsonify({"result": "ejected", "msg": "Tidak ada file SIM yang dipilih"})
+        return jsonify({
+            "result": "ejected",
+            "msg": "Tidak ada file SIM yang dipilih"
+        })
 
     # Pastikan folder tujuan ada
     upload_folder = os.path.join("static", "Gambar", "identitas")
     os.makedirs(upload_folder, exist_ok=True)
 
     # Simpan file ke folder yang diinginkan
-    file_path = os.path.join(upload_folder, f"{user_id}_{file.filename}").replace(
-        "\\", "/"
-    )
+    file_path = os.path.join(upload_folder,
+                             f"{user_id}_{file.filename}").replace("\\", "/")
     try:
         file.save(file_path)
     except Exception as e:
         logger.error(f"Gagal menyimpan file SIM: {str(e)}")
-        return jsonify({"result": "ejected", "msg": "Gagal menyimpan foto SIM"})
+        return jsonify({
+            "result": "ejected",
+            "msg": "Gagal menyimpan foto SIM"
+        })
 
     # Hash password menggunakan hashlib.sha256
     pw_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
     # Simpan data pengguna ke database
-    db.users.insert_one(
-        {
-            "user_id": user_id,
-            "username": username,
-            "email": email,
-            "phone": phone,
-            "name": name,
-            "password": pw_hash,
-            "image_path": file_path,
-            "verif": "unverified",
-            "first_login": True,
-        }
-    )
+    db.users.insert_one({
+        "user_id": user_id,
+        "username": username,
+        "email": email,
+        "phone": phone,
+        "name": name,
+        "password": pw_hash,
+        "image_path": file_path,
+        "verif": "unverified",
+        "first_login": True,
+    })
 
     # Membuat token JWT
     payload = {
@@ -1293,29 +1327,36 @@ def confirmPesanan():
 
     if not id_mobil:
         logger.error("ID mobil tidak diberikan.")
-        return jsonify({"status": "error", "message": "ID mobil tidak diberikan"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "ID mobil tidak diberikan"
+        }), 400
 
     # Cari transaksi
     if order_id:
-        transaction = db.transaction.find_one(
-            {"order_id": order_id, "id_mobil": id_mobil}
-        )
+        transaction = db.transaction.find_one({
+            "order_id": order_id,
+            "id_mobil": id_mobil
+        })
     else:
-        transaction = db.transaction.find_one(
-            {"id_mobil": id_mobil, "status": {"$in": ["sudah bayar", "Diproses"]}}
-        )
+        transaction = db.transaction.find_one({
+            "id_mobil": id_mobil,
+            "status": {
+                "$in": ["sudah bayar", "Diproses"]
+            }
+        })
 
     if not transaction:
         logger.error(
             f"Tidak ditemukan transaksi aktif untuk id_mobil: {id_mobil}, order_id: {order_id}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Tidak ditemukan transaksi aktif untuk mobil ini",
-                }
-            ),
+            jsonify({
+                "status":
+                "error",
+                "message":
+                "Tidak ditemukan transaksi aktif untuk mobil ini",
+            }),
             404,
         )
 
@@ -1328,19 +1369,22 @@ def confirmPesanan():
             f"Transaksi {order_id} tidak dalam status yang valid untuk konfirmasi: {transaction['status']}"
         )
         return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": f"Transaksi tidak dalam status yang valid untuk konfirmasi: {transaction['status']}",
-                }
-            ),
+            jsonify({
+                "status":
+                "error",
+                "message":
+                f"Transaksi tidak dalam status yang valid untuk konfirmasi: {transaction['status']}",
+            }),
             400,
         )
 
     # Perbarui status transaksi
     result_transaction = db.transaction.update_one(
         {"order_id": order_id},
-        {"$set": {"status": "Digunakan", "status_mobil": "digunakan"}},
+        {"$set": {
+            "status": "Digunakan",
+            "status_mobil": "digunakan"
+        }},
     )
     logger.info(
         f"Update transaksi {order_id}: matched={result_transaction.matched_count}, modified={result_transaction.modified_count}"
@@ -1365,70 +1409,96 @@ def confirmPesanan():
         f"Transaksi {order_id} berhasil dikonfirmasi untuk id_mobil: {id_mobil}"
     )
     return (
-        jsonify(
-            {
-                "status": "success",
-                "message": "Pesanan berhasil dikonfirmasi",
-                "order_id": order_id,
-            }
-        ),
+        jsonify({
+            "status": "success",
+            "message": "Pesanan berhasil dikonfirmasi",
+            "order_id": order_id,
+        }),
         200,
     )
 
 
 @api.route("/api/transaction_detail/<order_id>", methods=["GET"])
 def get_transaction_detail(order_id):
-    logger.info(f"Menerima permintaan untuk detail transaksi: order_id={order_id}")
+    logger.info(
+        f"Menerima permintaan untuk detail transaksi: order_id={order_id}")
     try:
         transaction = db.transaction.find_one({"order_id": order_id})
         if not transaction:
             logger.error(f"Transaksi tidak ditemukan: order_id={order_id}")
-            return jsonify({"result": "error", "msg": "Transaksi tidak ditemukan"}), 404
+            return jsonify({
+                "result": "error",
+                "msg": "Transaksi tidak ditemukan"
+            }), 404
 
         user = db.users.find_one({"user_id": transaction["user_id"]})
         if not user:
-            logger.error(f"Pengguna tidak ditemukan: user_id={transaction['user_id']}")
-            return jsonify({"result": "error", "msg": "Pengguna tidak ditemukan"}), 404
+            logger.error(
+                f"Pengguna tidak ditemukan: user_id={transaction['user_id']}")
+            return jsonify({
+                "result": "error",
+                "msg": "Pengguna tidak ditemukan"
+            }), 404
 
         response = {
-            "order_id": transaction["order_id"],
-            "item": transaction.get("item", ""),
-            "type_mobil": transaction.get("type_mobil", ""),
-            "plat": transaction.get("plat", ""),
-            "penyewa": transaction.get("penyewa", ""),
-            "lama_rental": transaction.get("lama_rental", ""),
-            "total": transaction.get("total", 0),
-            "date_rent": transaction.get("date_rent", ""),
-            "end_rent": transaction.get("end_rent", ""),
-            "end_time": transaction.get("end_time", ""),
-            "status": transaction.get("status", ""),
-            "status_mobil": transaction.get("status_mobil", ""),
-            "return_status": transaction.get("status_pengembalian", ""),
-            "actual_return_date": transaction.get("actual_return_date", ""),
-            "actual_return_time": transaction.get("actual_return_time", ""),
-            "biaya_sopir": transaction.get("biaya_sopir", 0),
-            "gunakan_pengantaran": transaction.get("gunakan_pengantaran", False),
-            "delivery_cost": transaction.get("delivery_cost", 0),
-            "delivery_location": transaction.get("delivery_location", ""),
-            "delivery_lat": transaction.get("delivery_lat", None),
-            "delivery_lon": transaction.get("delivery_lon", None),
-            "profile_image_path": user.get(
-                "profile_image_path", "/static/icon/user.jpg"
-            ),
-            "image_path": user.get("image_path", "/static/icon/user.jpg"),
+            "order_id":
+            transaction["order_id"],
+            "item":
+            transaction.get("item", ""),
+            "type_mobil":
+            transaction.get("type_mobil", ""),
+            "plat":
+            transaction.get("plat", ""),
+            "penyewa":
+            transaction.get("penyewa", ""),
+            "lama_rental":
+            transaction.get("lama_rental", ""),
+            "total":
+            transaction.get("total", 0),
+            "date_rent":
+            transaction.get("date_rent", ""),
+            "end_rent":
+            transaction.get("end_rent", ""),
+            "end_time":
+            transaction.get("end_time", ""),
+            "status":
+            transaction.get("status", ""),
+            "status_mobil":
+            transaction.get("status_mobil", ""),
+            "return_status":
+            transaction.get("status_pengembalian", ""),
+            "actual_return_date":
+            transaction.get("actual_return_date", ""),
+            "actual_return_time":
+            transaction.get("actual_return_time", ""),
+            "biaya_sopir":
+            transaction.get("biaya_sopir", 0),
+            "gunakan_pengantaran":
+            transaction.get("gunakan_pengantaran", False),
+            "delivery_cost":
+            transaction.get("delivery_cost", 0),
+            "delivery_location":
+            transaction.get("delivery_location", ""),
+            "delivery_lat":
+            transaction.get("delivery_lat", None),
+            "delivery_lon":
+            transaction.get("delivery_lon", None),
+            "profile_image_path":
+            user.get("profile_image_path", "/static/icon/user.jpg"),
+            "image_path":
+            user.get("image_path", "/static/icon/user.jpg"),
         }
 
         logger.info(f"Detail transaksi berhasil diambil: order_id={order_id}")
         return jsonify({"result": "success", "data": response}), 200
     except Exception as e:
-        logger.error(f"Error saat mengambil detail transaksi {order_id}: {str(e)}")
+        logger.error(
+            f"Error saat mengambil detail transaksi {order_id}: {str(e)}")
         return (
-            jsonify(
-                {
-                    "result": "error",
-                    "msg": "Terjadi kesalahan saat mengambil detail transaksi",
-                }
-            ),
+            jsonify({
+                "result": "error",
+                "msg": "Terjadi kesalahan saat mengambil detail transaksi",
+            }),
             500,
         )
 
@@ -1449,12 +1519,15 @@ def ambilPendapatan():
         current_app.logger.error("Tahun tidak diberikan dalam permintaan")
         return jsonify({"error": "Tahun diperlukan"}), 400
 
-    data = db.transaction.find(
-        {
-            "status": {"$in": ["sudah bayar", "completed"]},
-            "date_rent": {"$regex": date, "$options": "i"},
-        }
-    )
+    data = db.transaction.find({
+        "status": {
+            "$in": ["sudah bayar", "completed"]
+        },
+        "date_rent": {
+            "$regex": date,
+            "$options": "i"
+        },
+    })
     total = {month: 0 for month in range(1, 13)}
     try:
         for dt in data:
@@ -1470,10 +1543,10 @@ def ambilPendapatan():
         return jsonify(total)
     except Exception as e:
         current_app.logger.error(
-            f"Error saat memproses pendapatan untuk tahun {date}: {str(e)}"
-        )
+            f"Error saat memproses pendapatan untuk tahun {date}: {str(e)}")
         return (
-            jsonify({"error": "Terjadi kesalahan saat mengambil data pendapatan"}),
+            jsonify(
+                {"error": "Terjadi kesalahan saat mengambil data pendapatan"}),
             500,
         )
 
@@ -1481,12 +1554,15 @@ def ambilPendapatan():
 @api.route("/api/get_transaksi", methods=["GET"])
 def get_transaksi():
     date = datetime.now().strftime("%Y")
-    data = db.transaction.find(
-        {
-            "status": {"$in": ["sudah bayar", "completed"]},
-            "date_rent": {"$regex": date, "$options": "i"},
-        }
-    )
+    data = db.transaction.find({
+        "status": {
+            "$in": ["sudah bayar", "completed"]
+        },
+        "date_rent": {
+            "$regex": date,
+            "$options": "i"
+        },
+    })
     total = {month: 0 for month in range(1, 13)}
     try:
         for dt in data:
@@ -1498,14 +1574,15 @@ def get_transaksi():
                     f"Gagal parsing date_rent untuk transaksi {dt.get('order_id', 'unknown')}: {dt['date_rent']}, error: {str(e)}"
                 )
                 continue
-        current_app.logger.info(f"Jumlah transaksi untuk tahun {date}: {total}")
+        current_app.logger.info(
+            f"Jumlah transaksi untuk tahun {date}: {total}")
         return jsonify(total)
     except Exception as e:
         current_app.logger.error(
-            f"Error saat memproses transaksi untuk tahun {date}: {str(e)}"
-        )
+            f"Error saat memproses transaksi untuk tahun {date}: {str(e)}")
         return (
-            jsonify({"error": "Terjadi kesalahan saat mengambil data transaksi"}),
+            jsonify(
+                {"error": "Terjadi kesalahan saat mengambil data transaksi"}),
             500,
         )
 
@@ -1528,26 +1605,23 @@ def filter_transaksi():
             query["status_mobil"] = "digunakan"
 
         transactions = list(db.transaction.find(query))
-        response = [
-            {
-                "order_id": trans["order_id"],
-                "item": trans.get("item", ""),
-                "type_mobil": trans.get("type_mobil", ""),
-                "plat": trans.get("plat", ""),
-                "penyewa": trans.get("penyewa", ""),
-                "lama_rental": trans.get("lama_rental", ""),
-                "total": trans.get("total", 0),
-                "date_rent": trans.get("date_rent", ""),
-                "end_rent": trans.get("end_rent", ""),
-                "end_time": trans.get("end_time", ""),
-                "status": trans.get("status", ""),
-                "status_mobil": trans.get("status_mobil", ""),
-                "return_status": trans.get("status_pengembalian", ""),
-                "actual_return_date": trans.get("actual_return_date", ""),
-                "actual_return_time": trans.get("actual_return_time", ""),
-            }
-            for trans in transactions
-        ]
+        response = [{
+            "order_id": trans["order_id"],
+            "item": trans.get("item", ""),
+            "type_mobil": trans.get("type_mobil", ""),
+            "plat": trans.get("plat", ""),
+            "penyewa": trans.get("penyewa", ""),
+            "lama_rental": trans.get("lama_rental", ""),
+            "total": trans.get("total", 0),
+            "date_rent": trans.get("date_rent", ""),
+            "end_rent": trans.get("end_rent", ""),
+            "end_time": trans.get("end_time", ""),
+            "status": trans.get("status", ""),
+            "status_mobil": trans.get("status_mobil", ""),
+            "return_status": trans.get("status_pengembalian", ""),
+            "actual_return_date": trans.get("actual_return_date", ""),
+            "actual_return_time": trans.get("actual_return_time", ""),
+        } for trans in transactions]
         logger.info(
             f"Transaksi difilter: mtd={mtd}, date={date}, hasil={len(response)}"
         )
@@ -1555,9 +1629,10 @@ def filter_transaksi():
     except Exception as e:
         logger.error(f"Error saat memfilter transaksi: {str(e)}")
         return (
-            jsonify(
-                {"result": "error", "msg": "Terjadi kesalahan saat memfilter transaksi"}
-            ),
+            jsonify({
+                "result": "error",
+                "msg": "Terjadi kesalahan saat memfilter transaksi"
+            }),
             500,
         )
 
@@ -1565,12 +1640,10 @@ def filter_transaksi():
 @api.route("/api/get_car/<id>")
 def get_car(id):
     data = db.dataMobil.find_one({"id_mobil": id})
-    return jsonify(
-        {
-            "merek": data["merek"],
-            "harga": data["harga"],
-        }
-    )
+    return jsonify({
+        "merek": data["merek"],
+        "harga": data["harga"],
+    })
 
 
 @api.route("/api/add_transaction_from_admin", methods=["POST"])
@@ -1582,22 +1655,14 @@ def add_transaction_from_admin():
     penyewa = request.form.get("penyewa")
     gunakan_sopir = request.form.get("gunakan_sopir") == "true"
     gunakan_pengantaran = request.form.get("gunakan_pengantaran") == "true"
-    delivery_cost = (
-        int(request.form.get("delivery_cost", 0)) if gunakan_pengantaran else 0
-    )
-    delivery_location = (
-        request.form.get("delivery_location", "") if gunakan_pengantaran else ""
-    )
-    delivery_lat = (
-        float(request.form.get("delivery_lat"))
-        if request.form.get("delivery_lat")
-        else None
-    )
-    delivery_lon = (
-        float(request.form.get("delivery_lon"))
-        if request.form.get("delivery_lon")
-        else None
-    )
+    delivery_cost = (int(request.form.get("delivery_cost", 0))
+                     if gunakan_pengantaran else 0)
+    delivery_location = (request.form.get("delivery_location", "")
+                         if gunakan_pengantaran else "")
+    delivery_lat = (float(request.form.get("delivery_lat"))
+                    if request.form.get("delivery_lat") else None)
+    delivery_lon = (float(request.form.get("delivery_lon"))
+                    if request.form.get("delivery_lon") else None)
 
     # Validasi input
     if not mtd or not id_mobil or not hari or not penyewa:
@@ -1605,12 +1670,12 @@ def add_transaction_from_admin():
             f"Data tidak lengkap: mtd={mtd}, id_mobil={id_mobil}, hari={hari}, penyewa={penyewa}"
         )
         return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Data tidak lengkap: mtd, id_mobil, hari, dan penyewa harus diisi",
-                }
-            ),
+            jsonify({
+                "result":
+                "failed",
+                "message":
+                "Data tidak lengkap: mtd, id_mobil, hari, dan penyewa harus diisi",
+            }),
             400,
         )
 
@@ -1620,21 +1685,23 @@ def add_transaction_from_admin():
             raise ValueError("Hari harus lebih besar dari 0")
     except (TypeError, ValueError):
         logger.error(f"Jumlah hari tidak valid: {hari}")
-        return jsonify({"result": "failed", "message": "Jumlah hari tidak valid"}), 400
+        return jsonify({
+            "result": "failed",
+            "message": "Jumlah hari tidak valid"
+        }), 400
 
-    if gunakan_pengantaran and (
-        not delivery_location or not delivery_lat or not delivery_lon
-    ):
+    if gunakan_pengantaran and (not delivery_location or not delivery_lat
+                                or not delivery_lon):
         logger.error(
             f"Lokasi pengantaran atau koordinat tidak lengkap untuk id_mobil: {id_mobil}"
         )
         return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Lokasi pengantaran dan koordinat (lat, lon) harus diisi jika menggunakan pengantaran",
-                }
-            ),
+            jsonify({
+                "result":
+                "failed",
+                "message":
+                "Lokasi pengantaran dan koordinat (lat, lon) harus diisi jika menggunakan pengantaran",
+            }),
             400,
         )
 
@@ -1642,12 +1709,12 @@ def add_transaction_from_admin():
     if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
         logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
         return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Biaya pengantaran harus 0, 100000, atau 200000",
-                }
-            ),
+            jsonify({
+                "result":
+                "failed",
+                "message":
+                "Biaya pengantaran harus 0, 100000, atau 200000",
+            }),
             400,
         )
 
@@ -1655,14 +1722,20 @@ def add_transaction_from_admin():
     data_mobil = db.dataMobil.find_one({"id_mobil": id_mobil})
     if not data_mobil:
         logger.error(f"Mobil tidak ditemukan: id_mobil={id_mobil}")
-        return jsonify({"result": "failed", "message": "Mobil tidak ditemukan"}), 404
+        return jsonify({
+            "result": "failed",
+            "message": "Mobil tidak ditemukan"
+        }), 404
 
     # Cek status mobil
     if data_mobil.get("status_transaksi") in ["pembayaran", "digunakan"]:
         logger.error(
             f"Mobil sudah digunakan atau dalam proses pembayaran: id_mobil={id_mobil}"
         )
-        return jsonify({"result": "failed", "message": "Mobil tidak tersedia"}), 409
+        return jsonify({
+            "result": "failed",
+            "message": "Mobil tidak tersedia"
+        }), 409
 
     # Hitung total harga
     harga_per_hari = int(data_mobil["harga"])
@@ -1720,26 +1793,24 @@ def add_transaction_from_admin():
 
     # Kembalikan respons dengan informasi mobil
     return (
-        jsonify(
-            {
-                "result": "success",
-                "message": "Transaksi Berhasil",
-                "data": {
-                    "order_id": order_id,
-                    "merek": data_mobil["merek"],
-                    "type_mobil": data_mobil.get("type_mobil", ""),
-                    "plat": data_mobil.get("plat", ""),
-                    "bahan_bakar": data_mobil.get("bahan_bakar", ""),
-                    "seat": data_mobil.get("seat", ""),
-                    "transmisi": data_mobil.get("transmisi", ""),
-                    "total": total_harga,
-                    "lama_rental": f"{hari} hari",
-                    "penyewa": penyewa,
-                    "date_rent": date_rent,
-                    "end_rent": end_rent,
-                },
-            }
-        ),
+        jsonify({
+            "result": "success",
+            "message": "Transaksi Berhasil",
+            "data": {
+                "order_id": order_id,
+                "merek": data_mobil["merek"],
+                "type_mobil": data_mobil.get("type_mobil", ""),
+                "plat": data_mobil.get("plat", ""),
+                "bahan_bakar": data_mobil.get("bahan_bakar", ""),
+                "seat": data_mobil.get("seat", ""),
+                "transmisi": data_mobil.get("transmisi", ""),
+                "total": total_harga,
+                "lama_rental": f"{hari} hari",
+                "penyewa": penyewa,
+                "date_rent": date_rent,
+                "end_rent": end_rent,
+            },
+        }),
         200,
     )
 
@@ -1749,13 +1820,17 @@ def check_username():
     username = request.form.get("username")
 
     if len(username) < 8:
-        return jsonify({"result": "ejected", "msg": "Username minimal 8 karakter"})
+        return jsonify({
+            "result": "ejected",
+            "msg": "Username minimal 8 karakter"
+        })
     elif db.users.find_one({"username": username}):
         return jsonify({"result": "ejected", "msg": "Username sudah ada"})
     elif not username[0].isalpha():
-        return jsonify(
-            {"result": "ejected", "msg": "Username harus diawali dengan huruf"}
-        )
+        return jsonify({
+            "result": "ejected",
+            "msg": "Username harus diawali dengan huruf"
+        })
     elif not username.replace(".", "").replace("_", "").isalnum():
         return jsonify({"result": "ejected", "msg": "Username tidak valid"})
     else:
