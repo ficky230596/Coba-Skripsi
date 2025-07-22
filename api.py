@@ -499,6 +499,7 @@ def create_transaction():
         )
 
     # Buat order_id dan data transaksi
+    order_id = str(uuid.uuid1())
     wita_tz = pytz.timezone("Asia/Makassar")
     now = datetime.now(wita_tz)
     date_rent = now.strftime("%d-%B-%Y")
