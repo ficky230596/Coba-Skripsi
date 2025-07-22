@@ -1510,7 +1510,7 @@ def delete_mobil():
     id_mobil = request.form.get("id_mobil")
     data = db.dataMobil.find_one({"id_mobil": id_mobil})
     db.dataMobil.delete_one({"id_mobil": id_mobil})
-    os.remove(f"static/gambar/mobil/{data['gambar']}")
+    os.remove(f"static/Gambar/mobil/{data['gambar']}")
     return jsonify({"result": "success"})
 
 
