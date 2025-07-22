@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pytz
 from threading import Thread, Lock
 from time import sleep
 import hashlib
@@ -498,8 +499,8 @@ def create_transaction():
         )
 
     # Buat order_id dan data transaksi
-    order_id = str(uuid.uuid1())
-    now = datetime.now()
+    wita_tz = pytz.timezone("Asia/Makassar")
+    now = datetime.now(wita_tz)
     date_rent = now.strftime("%d-%B-%Y")
     time_rent = now.strftime("%H:%M")
     end_time = now + timedelta(days=hari)
