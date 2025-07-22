@@ -139,7 +139,7 @@ $(document).ready(function () {
                     data.forEach(function (dt) {
                         $('.car-list').append(`
                             <div class="card border-1 rounded-4 overflow-hidden">
-                                <img src="/static/Gambar/${dt.gambar}" alt="${dt.gambar}" class="card-img-top">
+                                <img src="/static/Gambar/mobil/${dt.gambar}" alt="${dt.gambar}" class="card-img-top">
                                 <div class="card-body">
                                     <h3 class="mb-2 text-primary">${dt.merek} ${dt.type_mobil}</h3>
                                     <div class="row">
