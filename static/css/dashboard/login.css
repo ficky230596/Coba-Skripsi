@@ -1,5 +1,9 @@
+/* Pastikan font Raleway tersedia, jika tidak gunakan fallback */
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&display=swap');
+
+/* Latar belakang utama */
 .form-bg {
-    background: linear-gradient(150deg,#1B394D 33%,#2D9DA7 34%,#2D9DA7 66%,#EC5F20 67%);
+    background: linear-gradient(150deg, #1B394D 33%, #2D9DA7 34%, #2D9DA7 66%, #EC5F20 67%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -7,112 +11,288 @@
     font-family: 'Raleway', sans-serif;
 }
 
+/* Kontainer form */
 .form-container {
-    background: linear-gradient(150deg,#1B394D 33%,#2D9DA7 34%,#2D9DA7 66%,#EC5F20 67%);
-    font-family: 'Raleway', sans-serif;
+    background: linear-gradient(150deg, #1B394D 33%, #2D9DA7 34%, #2D9DA7 66%, #EC5F20 67%);
     text-align: center;
-    padding: 30px 20px 50px;
+    padding: 2rem 1.5rem 3rem;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
+/* Judul */
 .form-container .title {
     color: #fff;
-    font-size: 23px;
+    font-size: clamp(1.5rem, 5vw, 1.8rem);
     text-transform: capitalize;
-    letter-spacing: 1px;
-    margin: 0 0 60px;
+    letter-spacing: 0.05rem;
+    margin: 0 0 3rem;
 }
 
-.form-container .form-horizontal {
+/* Form */
+.form-horizontal {
     background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
+/* Ikon di atas form */
 .form-horizontal .form-icon {
     color: #fff;
     background-color: #1B394D;
-    font-size: 75px;
-    line-height: 92px;
-    height: 90px;
-    width: 90px;
-    margin: -65px auto 10px;
+    font-size: clamp(2.5rem, 8vw, 3.5rem);
+    line-height: 4.5rem;
+    height: 4.5rem;
+    width: 4.5rem;
+    margin: -3rem auto 0.5rem;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+/* Grup input */
 .form-horizontal .form-group {
-    margin: 0 0 10px;
+    margin: 0 0 1rem;
     position: relative;
 }
 
 .form-horizontal .form-group:nth-child(3) {
-    margin-bottom: 30px;
+    margin-bottom: 1.5rem;
 }
 
+/* Ikon di dalam input */
 .form-horizontal .form-group .input-icon {
     color: #e7e7e7;
-    font-size: 23px;
+    font-size: 1.2rem;
     position: absolute;
-    left: 0;
-    top: 10px;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
+/* Input form */
 .form-horizontal .form-control {
-    color: #000;
-    font-size: 16px;
+    color: #333;
+    font-size: 1rem;
     font-weight: 600;
-    height: 50px;
-    padding: 10px 10px 10px 40px;
-    margin: 0 0 5px;
+    height: 2.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 2.5rem;
     border: none;
     border-bottom: 2px solid #e7e7e7;
-    border-radius: 0px;
+    border-radius: 0;
     box-shadow: none;
+    transition: border-bottom-color 0.3s ease;
 }
 
 .form-horizontal .form-control:focus {
-    box-shadow: none;
     border-bottom-color: #EC5F20;
+    outline: none;
 }
 
 .form-horizontal .form-control::placeholder {
-    color: #000;
-    font-size: 16px;
-    font-weight: 600;
+    color: #999;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
+/* Tautan lupa password */
 .form-horizontal .forgot {
-    font-size: 13px;
+    font-size: 0.85rem;
     font-weight: 600;
     text-align: right;
     display: block;
+    margin-top: 0.5rem;
 }
 
 .form-horizontal .forgot a {
-    color: #777;
-    transition: all 0.3s ease 0s;
+    color: #555;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
 }
 
 .form-horizontal .forgot a:hover {
-    color: #777;
+    color: #EC5F20;
     text-decoration: underline;
 }
 
+/* Tombol login */
 .form-horizontal .signin {
     color: #fff;
     background-color: #EC5F20;
-    font-size: 17px;
+    font-size: 1rem;
     text-transform: capitalize;
-    letter-spacing: 2px;
+    letter-spacing: 0.1rem;
     width: 100%;
-    padding: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    transition: all 0.4s ease 0s;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 
 .form-horizontal .signin:hover,
 .form-horizontal .signin:focus {
+    background-color: #d94e1a;
+    letter-spacing: 0.15rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal Lupa Password */
+.modal-content {
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    background-color: #1B394D;
+    color: #fff;
+    border-bottom: none;
+}
+
+.modal-title {
+    font-size: 1.2rem;
     font-weight: 600;
-    letter-spacing: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3) inset;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.step p {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.step .form-control {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e7e7e7;
+    border-radius: 5px;
+}
+
+.step .form-control:focus {
+    border-color: #EC5F20;
+    box-shadow: 0 0 5px rgba(236, 95, 32, 0.3);
+}
+
+.step .form-text {
+    font-size: 0.8rem;
+}
+
+.step .btn-primary {
+    background-color: #EC5F20;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.step .btn-primary:hover {
+    background-color: #d94e1a;
+}
+
+.step .btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.step .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Responsivitas */
+@media (max-width: 768px) {
+    .form-container {
+        padding: 1.5rem 1rem 2rem;
+        max-width: 90%;
+    }
+
+    .form-container .title {
+        font-size: clamp(1.2rem, 4vw, 1.5rem);
+        margin-bottom: 2rem;
+    }
+
+    .form-horizontal {
+        padding: 1rem;
+    }
+
+    .form-horizontal .form-icon {
+        font-size: clamp(2rem, 6vw, 2.5rem);
+        line-height: 3.5rem;
+        height: 3.5rem;
+        width: 3.5rem;
+        margin-top: -2.5rem;
+    }
+
+    .form-horizontal .form-control {
+        font-size: 0.9rem;
+        height: 2.2rem;
+        padding-left: 2.2rem;
+    }
+
+    .form-horizontal .form-group .input-icon {
+        font-size: 1rem;
+        left: 0.5rem;
+    }
+
+    .form-horizontal .signin {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .step p {
+        font-size: 0.85rem;
+    }
+
+    .step .btn-primary,
+    .step .btn-secondary {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-container {
+        padding: 1rem 0.75rem 1.5rem;
+    }
+
+    .form-horizontal .form-control {
+        font-size: 0.85rem;
+        height: 2rem;
+    }
+
+    .form-horizontal .form-group .input-icon {
+        font-size: 0.9rem;
+    }
+
+    .form-horizontal .forgot {
+        font-size: 0.75rem;
+    }
+
+    .form-horizontal .signin {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    .modal-title {
+        font-size: 1rem;
+    }
+
+    .step .form-control {
+        font-size: 0.85rem;
+    }
 }

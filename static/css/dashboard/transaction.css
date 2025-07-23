@@ -1,44 +1,46 @@
-/* Tabel */
+/* Gaya dasar */
 .table_data {
   margin-top: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 1rem;
 }
 
 .table {
   background-color: #fff;
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+
+
+.table_data .table thead th {
+    background-color: #0d6dfd; /* Warna default Bootstrap .table-dark */
+    color: #fff; /* Warna teks putih untuk kontras */
+}
+
+.title-dashboard {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 1rem;
 }
 
 /* Warna untuk setiap merek mobil */
-.car-color-1 {
-  background-color: #e3f2fd; /* Biru muda untuk Toyota Avanza */
-}
-.car-color-2 {
-  background-color: #e8f5e9; /* Hijau muda untuk Honda Jazz */
-}
-.car-color-3 {
-  background-color: #fff3e0; /* Oranye muda untuk Daihatsu Xenia */
-}
-.car-color-4 {
-  background-color: #f3e5f5; /* Ungu muda untuk Suzuki Ertiga */
-}
-.car-color-5 {
-  background-color: #efebe9; /* Abu-abu muda untuk Mitsubishi Xpander */
-}
-.car-color-default {
-  background-color: #ffffff; /* Putih untuk merek tidak dikenal */
-}
+.car-color-1 { background-color: #e3f2fd; }
+.car-color-2 { background-color: #e8f5e9; }
+.car-color-3 { background-color: #fff3e0; }
+.car-color-4 { background-color: #f3e5f5; }
+.car-color-5 { background-color: #efebe9; }
+.car-color-default { background-color: #ffffff; }
 
 /* Warna untuk status transaksi (border kiri) */
-.status-digunakan {
-  border-left: 4px solid #2196f3; /* Biru untuk status "digunakan" */
-}
-.status-selesai {
-  border-left: 4px solid #4caf50; /* Hijau untuk status "selesai" */
-}
-.status-pembayaran {
-  border-left: 4px solid #ff9800; /* Oranye untuk status "pembayaran" */
-}
+.status-digunakan { border-left: 4px solid #2196f3; }
+.status-selesai { border-left: 4px solid #4caf50; }
+.status-pembayaran { border-left: 4px solid #ff9800; }
 
 /* Badge untuk kolom Status */
 .status-badge {
@@ -47,38 +49,22 @@
   font-size: 12px;
   font-weight: 500;
   display: inline-block;
+  white-space: nowrap;
+  text-transform: capitalize;
 }
-.status-badge-digunakan {
-  background-color: #bbdefb; /* Biru muda untuk "digunakan" */
-  color: #1565c0;
-}
-.status-badge-selesai {
-  background-color: #c8e6c9; /* Hijau muda untuk "selesai" */
-  color: #2e7d32;
-}
-.status-badge-pembayaran {
-  background-color: #ffe0b2; /* Oranye muda untuk "pembayaran" */
-  color: #ef6c00;
-}
+.status-badge-digunakan { background-color: #bbdefb; color: #1565c0; }
+.status-badge-selesai { background-color: #c8e6c9; color: #2e7d32; }
+.status-badge-pembayaran { background-color: #ffe0b2; color: #ef6c00; }
 
 /* Gaya untuk status di modal */
-#modal-status.status-digunakan {
-  color: #1565c0; /* Biru untuk "digunakan" */
-  font-weight: 600;
-}
-#modal-status.status-selesai {
-  color: #2e7d32; /* Hijau untuk "selesai" */
-  font-weight: 600;
-}
-#modal-status.status-pembayaran {
-  color: #ef6c00; /* Oranye untuk "pembayaran" */
-  font-weight: 600;
-}
+#modal-status.status-digunakan { color: #1565c0; font-weight: 600; }
+#modal-status.status-selesai { color: #2e7d32; font-weight: 600; }
+#modal-status.status-pembayaran { color: #ef6c00; font-weight: 600; }
 
 /* Pastikan teks tetap terbaca */
 .car-color-1, .car-color-2, .car-color-3, .car-color-4, .car-color-5, .car-color-default,
 .status-digunakan, .status-selesai, .status-pembayaran {
-  color: #333; /* Warna teks gelap untuk kontras */
+  color: #333;
 }
 
 /* Gaya tombol detail */
@@ -86,28 +72,41 @@
   padding: 5px 10px;
   font-size: 14px;
   transition: background-color 0.2s;
+  min-width: 60px;
+  text-align: center;
 }
 
 .btn-detail:hover {
   background-color: #0b5ed7;
 }
 
+/* Gaya tombol dan select */
+.btn-primary, .form-select {
+  font-size: 14px;
+  padding: 6px 12px;
+}
+
 /* Modal */
 .modal-content {
   border-radius: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .modal-header {
   border-bottom: none;
+  padding: 1rem;
 }
 
 .card {
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.1);
+  width: 100%;
 }
 
 .card-header {
   font-weight: 500;
+  font-size: 1rem;
 }
 
 .card-body p {
@@ -115,17 +114,14 @@
   font-size: 14px;
 }
 
-.card-body p strong {
-  color: #333;
-}
-
-.card-body p span {
-  color: #666;
-}
+.card-body p strong { color: #333; }
+.card-body p span { color: #666; }
 
 .img-clickable {
   transition: transform 0.2s;
   cursor: pointer;
+  max-width: 150px;
+  height: auto;
 }
 
 .img-clickable:hover {
@@ -134,6 +130,8 @@
 
 #zoomed-image {
   max-height: 80vh;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 /* Jaga style tabel tetap konsisten */
@@ -141,9 +139,286 @@
 .table_data .table td {
   padding: 8px;
   text-align: left;
-  vertical-align: middle;
+  vertical-align: top;
+  white-space: normal; /* Konten boleh membungkus */
+  box-sizing: border-box;
+  font-size: 15px;
+  text-transform: capitalize;
 }
 
 .table_data .table .countdown {
   white-space: nowrap;
+  text-transform: none;
+}
+
+/* Lebar kolom default untuk desktop (sidebar aktif) */
+.table_data {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table_data .table {
+  min-width: 900px;
+  table-layout: auto; /* Lebar kolom menyesuaikan konten */
+}
+
+.table_data .table tr > *:nth-child(1) { min-width: 40px; } /* # */
+.table_data .table tr > *:nth-child(2) { min-width: 100px; } /* Mobil */
+.table_data .table tr > *:nth-child(3) { min-width: 100px; } /* Tipe Mobil */
+.table_data .table tr > *:nth-child(4) { min-width: 60px; } /* Plat */
+.table_data .table tr > *:nth-child(5) { min-width: 150px; } /* Penyewa */
+.table_data .table tr > *:nth-child(6) { min-width: 60px; } /* Lama Rental */
+.table_data .table tr > *:nth-child(7) { min-width: 80px; } /* Total */
+.table_data .table tr > *:nth-child(8) { min-width: 100px; } /* Tanggal Rental */
+.table_data .table tr > *:nth-child(9) { min-width: 80px; } /* Akhir Rental */
+.table_data .table tr > *:nth-child(10) { min-width: 80px; } /* Waktu Tersisa */
+.table_data .table tr > *:nth-child(11) { min-width: 70px; } /* Status */
+.table_data .table tr > *:nth-child(12) { min-width: 70px; } /* Aksi */
+
+/* Aturan saat sidebar disembunyikan (desktop) */
+.sidebar-hidden .table_data {
+  overflow-x: hidden;
+}
+
+.sidebar-hidden .table_data .table {
+  min-width: auto;
+  width: 100%;
+  table-layout: auto; /* Lebar kolom menyesuaikan konten */
+}
+
+.sidebar-hidden .table_data .table th,
+.sidebar-hidden .table_data .table td {
+  white-space: nowrap; /* Konten tidak membungkus */
+  text-overflow: ellipsis; /* Potong teks panjang dengan ... */
+  overflow: hidden;
+}
+
+.sidebar-hidden .table_data .table tr > *:nth-child(1) { min-width: 50px; } /* # */
+.sidebar-hidden .table_data .table tr > *:nth-child(2) { min-width: 100px; } /* Mobil */
+.sidebar-hidden .table_data .table tr > *:nth-child(3) { min-width: 100px; } /* Tipe Mobil */
+.sidebar-hidden .table_data .table tr > *:nth-child(4) { min-width: 80px; } /* Plat */
+.sidebar-hidden .table_data .table tr > *:nth-child(5) { min-width: 200px; max-width: 300px; } /* Penyewa */
+.sidebar-hidden .table_data .table tr > *:nth-child(6) { min-width: 40px; max-width: 80px; } /* Lama Rental */
+.sidebar-hidden .table_data .table tr > *:nth-child(7) { min-width: 80px; } /* Total */
+.sidebar-hidden .table_data .table tr > *:nth-child(8) { min-width: 100px; } /* Tanggal Rental */
+.sidebar-hidden .table_data .table tr > *:nth-child(9) { min-width: 80px; } /* Akhir Rental */
+.sidebar-hidden .table_data .table tr > *:nth-child(10) { min-width: 80px; } /* Waktu Tersisa */
+.sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; } /* Status */
+.sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; } /* Aksi */
+
+/* Media Query untuk tablet (lebar layar <= 992px) */
+@media screen and (max-width: 992px) {
+  .table_data {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table_data .table {
+    min-width: 700px;
+    table-layout: auto;
+  }
+
+  .table_data .table th,
+  .table_data .table td {
+    padding: 6px;
+    font-size: 0.9rem;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .btn-detail, .btn-primary, .form-select {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .card-header { font-size: 0.9rem; }
+  .card-body p { font-size: 13px; }
+  .modal-header { padding: 0.75rem; }
+  .img-clickable { max-width: 120px; }
+
+  /* Sesuaikan lebar kolom (sidebar aktif) */
+  .table_data .table tr > *:nth-child(1) { min-width: 40px; }
+  .table_data .table tr > *:nth-child(2) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(3) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(4) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(5) { min-width: 120px; }
+  .table_data .table tr > *:nth-child(6) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(7) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(8) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(9) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(10) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(11) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(12) { min-width: 60px; }
+
+  /* Sesuaikan lebar kolom saat sidebar disembunyikan */
+  .sidebar-hidden .table_data .table {
+    min-width: auto;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .sidebar-hidden .table_data .table th,
+  .sidebar-hidden .table_data .table td {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .sidebar-hidden .table_data .table tr > *:nth-child(1) { min-width: 50px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(2) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(3) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(4) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(5) { min-width: 180px; max-width: 250px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(6) { min-width: 40px; max-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(7) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(8) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(9) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(10) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; }
+}
+
+/* Media Query untuk mobile (lebar layar <= 768px) */
+@media screen and (max-width: 768px) {
+  .title-dashboard { padding: 0 0.5rem; }
+  .row { flex-direction: column; gap: 0.75rem; }
+  .col-auto, .form-select { width: 100%; }
+  .table_data { padding: 0 0.5rem; }
+  .table_data .table { min-width: 600px; table-layout: auto; }
+  .table_data .table th,
+  .table_data .table td { padding: 5px; font-size: 0.8rem; }
+  .status-badge { font-size: 10px; padding: 3px 5px; }
+  .btn-detail, .btn-primary, .form-select { font-size: 12px; padding: 3px 6px; min-width: 45px; }
+  .card-header { font-size: 0.85rem; }
+  .card-body p { font-size: 12px; }
+  .modal-content { padding: 0.5rem; }
+  .modal-header { padding: 0.5rem; }
+  .img-clickable { max-width: 100px; }
+  #zoomed-image { max-height: 60vh; }
+
+  /* Sesuaikan lebar kolom (sidebar aktif) */
+  .table_data .table tr > *:nth-child(1) { min-width: 40px; }
+  .table_data .table tr > *:nth-child(2) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(3) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(4) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(5) { min-width: 120px; }
+  .table_data .table tr > *:nth-child(6) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(7) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(8) { min-width: 80px; }
+  .table_data .table tr > *:nth-child(9) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(10) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(11) { min-width: 60px; }
+  .table_data .table tr > *:nth-child(12) { min-width: 60px; }
+
+  /* Sesuaikan lebar kolom saat sidebar disembunyikan */
+  .sidebar-hidden .table_data .table {
+    min-width: auto;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .sidebar-hidden .table_data .table th,
+  .sidebar-hidden .table_data .table td {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .sidebar-hidden .table_data .table tr > *:nth-child(1) { min-width: 50px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(2) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(3) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(4) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(5) { min-width: 180px; max-width: 250px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(6) { min-width: 40px; max-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(7) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(8) { min-width: 100px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(9) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(10) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; }
+}
+
+/* Media Query untuk layar sangat kecil (lebar layar <= 576px) */
+@media screen and (max-width: 576px) {
+  .title-dashboard { padding: 0 0.3rem; }
+  .table_data { padding: 0 0.3rem; position: relative; }
+  .table_data .table { min-width: 500px; table-layout: auto; }
+  .table_data .table th,
+  .table_data .table td { padding: 4px; font-size: 0.7rem; }
+  .status-badge { font-size: 9px; padding: 2px 4px; }
+  .btn-detail, .btn-primary, .form-select { font-size: 11px; padding: 2px 5px; min-width: 40px; }
+  .card-header { font-size: 0.8rem; }
+  .card-body p { font-size: 11px; margin-bottom: 8px; }
+  .modal-content { padding: 0.4rem; }
+  .modal-header { padding: 0.4rem; }
+  .img-clickable { max-width: 80px; }
+  #zoomed-image { max-height: 50vh; }
+
+  /* Sembunyikan kolom yang kurang penting */
+  .table_data .table tr > *:nth-child(4),
+  .table_data .table tr > *:nth-child(6),
+  .table_data .table tr > *:nth-child(9),
+  .table_data .table tr > *:nth-child(10) {
+    display: none;
+  }
+
+.table_data::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent); /* Ubah ke abu-abu transparan */
+    pointer-events: none;
+}
+
+  /* Sesuaikan lebar kolom saat sidebar disembunyikan */
+  .sidebar-hidden .table_data .table {
+    min-width: auto;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .sidebar-hidden .table_data .table th,
+  .sidebar-hidden .table_data .table td {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .sidebar-hidden .table_data .table tr > *:nth-child(1) { min-width: 40px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(2) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(3) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(5) { min-width: 150px; max-width: 200px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(7) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(8) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; }
+}
+
+/* Media Query untuk layar ekstra kecil (lebar layar <= 400px) */
+@media screen and (max-width: 400px) {
+  .table_data .table th,
+  .table_data .table td { padding: 3px; font-size: 0.65rem; }
+  .status-badge { font-size: 8px; padding: 2px 3px; }
+  .btn-detail, .btn-primary, .form-select { font-size: 10px; padding: 2px 4px; min-width: 35px; }
+  .card-header { font-size: 0.75rem; }
+  .card-body p { font-size: 10px; margin-bottom: 6px; }
+  .modal-content { padding: 0.3rem; }
+  .modal-header { padding: 0.3rem; }
+  .img-clickable { max-width: 60px; }
+
+  /* Sesuaikan lebar kolom saat sidebar disembunyikan */
+  .sidebar-hidden .table_data .table tr > *:nth-child(1) { min-width: 40px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(2) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(3) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(5) { min-width: 150px; max-width: 200px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(7) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(8) { min-width: 80px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; }
+  .sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; }
 }
