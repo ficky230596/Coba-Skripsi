@@ -1,3 +1,4 @@
+// Fungsi Logout
 function logout() {
     Swal.fire({
         position: "top",
@@ -9,19 +10,24 @@ function logout() {
         confirmButtonText: "Yes",
     }).then((result) => {
         if (result.isConfirmed) {
-            $.removeCookie("tokenDashboard");
+            console.log("Logging out"); // Debugging
+            Cookies.remove("tokenDashboard"); // Menggunakan js-cookie
             localStorage.setItem("logoutDashboard", "true");
-            window.location.reload();
+            window.location.href = "/"; // Redirect ke halaman utama
         }
     });
 }
 
+// Fungsi untuk toggle sidebar
 function hideSidebar() {
     $('#sidebar').toggleClass('collapsed');
     $('.content-wrapper').toggleClass('expanded');
 }
 
 $(document).ready(function() {
+    // Debugging untuk memastikan jQuery dimuat
+    console.log("jQuery loaded, version:", $.fn.jquery);
+
     // Toggle Sidebar di Desktop
     $('#sidebarToggle').on('click', function() {
         hideSidebar();
@@ -42,8 +48,15 @@ $(document).ready(function() {
         localStorage.removeItem("tambahData");
     }
 
-    // Sembunyikan loading spinner setelah halaman dimuat
-    $(window).on('load', function() {
+    // Sembunyikan loading spinner setelah DOM selesai dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM fully loaded"); // Debugging
         $('.loading-overlay').addClass('hidden');
     });
+
+    // Fallback: sembunyikan loading setelah 3 detik
+    setTimeout(function() {
+        console.log("Fallback: hiding loading overlay"); // Debugging
+        $('.loading-overlay').addClass('hidden');
+    }, 3000);
 });
