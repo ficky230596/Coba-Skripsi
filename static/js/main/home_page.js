@@ -57,18 +57,21 @@ $(document).ready(function () {
                     data.forEach(function (dt) {
                         $('.car-list').append(`
                             <div class="card border-1 rounded-4 overflow-hidden">
-                                <img src="/static/Gambar/mobil/${dt.gambar}" alt="${dt.gambar}" class="card-img-top">
+                                <img src="/static/Gambar/mobil/${dt.gambar}" alt="${dt.gambar}" id="gambar_mobil" class="card-img-top">
                                 <div class="card-body">
                                     <h3 class="mb-2 text-primary">${dt.merek} ${dt.type_mobil}</h3>
-                                    <div class="row">
-                                        <div class="col">
-                                            <p class="d-flex m-0"><i class="eicon-seat pe-3 fs-5"></i>${dt.seat}</p>
+                                    <div class="car-info d-flex justify-content-between align-items-center">
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="eicon-seat pe-2 fs-5"></i>
+                                            <span>Seat: ${dt.seat}</span>
                                         </div>
-                                        <div class="col">
-                                            <p class="d-flex m-0"><i class="fa-solid fa-gas-pump pe-3 fs-5"></i>${dt.bahan_bakar}</p>
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
+                                            <span>${dt.bahan_bakar}</span>
                                         </div>
-                                        <div class="col-auto">
-                                            <p class="d-flex m-0"><i class="eicon-transmission pe-3 fs-5"></i>${dt.transmisi}</p>
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="eicon-transmission pe-2 fs-5"></i>
+                                            <span>${dt.transmisi}</span>
                                         </div>
                                     </div>
                                     <div class="border-top mt-3 py-3">
@@ -82,9 +85,9 @@ $(document).ready(function () {
                                         <div id="rating-stars"></div>
                                         <span id="current-rating" class="ms-2">0/5</span>
                                     </div>
-                                    <div class="mt-2">
+                                    <div class="d-flex align-items-center mt-2">
                                         <span class="me-2">Komentar:</span>
-                                        <p id="comment" class="m-0">Belum ada komentar.</p>
+                                        <div id="comment" class="m-0">Belum ada komentar.</div>
                                     </div>
                                     <div class="d-flex">
                                         <a class="btn car-btn btn-primary m-auto w-100 rounded-5" href="/detail-mobil?id=${dt.id_mobil || dt._id}">Detail</a>
@@ -139,18 +142,21 @@ $(document).ready(function () {
                     data.forEach(function (dt) {
                         $('.car-list').append(`
                             <div class="card border-1 rounded-4 overflow-hidden">
-                                <img src="/static/Gambar/mobil/${dt.gambar}" alt="${dt.gambar}" class="card-img-top">
+                                <img src="/static/Gambar/mobil/${dt.gambar}" alt="${dt.gambar}" id="gambar_mobil" class="card-img-top">
                                 <div class="card-body">
                                     <h3 class="mb-2 text-primary">${dt.merek} ${dt.type_mobil}</h3>
-                                    <div class="row">
-                                        <div class="col">
-                                            <p class="d-flex m-0"><i class="eicon-seat pe-3 fs-5"></i>${dt.seat}</p>
+                                    <div class="car-info d-flex justify-content-between align-items-center">
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="eicon-seat pe-2 fs-5"></i>
+                                            <span>Seat: ${dt.seat}</span>
                                         </div>
-                                        <div class="col">
-                                            <p class="d-flex m-0"><i class="fa-solid fa-gas-pump pe-3 fs-5"></i>${dt.bahan_bakar}</p>
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
+                                            <span>${dt.bahan_bakar}</span>
                                         </div>
-                                        <div class="col-auto">
-                                            <p class="d-flex m-0"><i class="eicon-transmission pe-3 fs-5"></i>${dt.transmisi}</p>
+                                        <div class="car-info-item d-flex align-items-center">
+                                            <i class="eicon-transmission pe-2 fs-5"></i>
+                                            <span>${dt.transmisi}</span>
                                         </div>
                                     </div>
                                     <div class="border-top mt-3 py-3">
@@ -164,9 +170,9 @@ $(document).ready(function () {
                                         <div id="rating-stars"></div>
                                         <span id="current-rating" class="ms-2">0/5</span>
                                     </div>
-                                    <div class="mt-2">
+                                    <div class="d-flex align-items-center mt-2">
                                         <span class="me-2">Komentar:</span>
-                                        <p id="comment" class="m-0">Belum ada komentar.</p>
+                                        <div id="comment" class="m-0">Belum ada komentar.</div>
                                     </div>
                                     <div class="d-flex">
                                         <a class="btn car-btn btn-primary m-auto w-100 rounded-5" href="/detail-mobil?id=${dt.id_mobil || dt._id}">Detail</a>
@@ -221,7 +227,8 @@ $(document).ready(function () {
                 },
                 success: function (data) {
                     if (data.result === 'redirect') {
-                        window.location.href = `/rating?car_id=${data.car_id}`;
+                        // Perbarui redirect untuk menyertakan order_id
+                        window.location.href = `/rating?car_id=${data.car_id}&order_id=${data.order_id}`;
                     } else if (data.result === 'no_action') {
                         console.log(data.msg);
                     } else {
@@ -239,7 +246,7 @@ $(document).ready(function () {
             });
         };
         const interval = setInterval(checkStatus, 10000);
-        $(window).on('unload', function () {
+        $(window).on('pagehide', function () {
             clearInterval(interval);
         });
     } else {

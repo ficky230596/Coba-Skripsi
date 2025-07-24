@@ -40,7 +40,7 @@ function hitungTotalHarga() {
         const deliveryCostRaw = document.getElementById("delivery-cost").value;
         deliveryCost = parseInt(deliveryCostRaw.replace(/\D/g, '')) || 0;
         // Validasi biaya pengantaran maksimum
-        const MAX_DELIVERY_COST = 200000;
+        const MAX_DELIVERY_COST = 50000;
         if (deliveryCost > MAX_DELIVERY_COST) {
             console.error('Biaya pengantaran tidak valid:', deliveryCost);
             toastr.error(`Biaya pengantaran (Rp ${deliveryCost.toLocaleString('id-ID')}) melebihi batas maksimum. Silakan pilih lokasi lain.`, 'Error');
@@ -146,6 +146,7 @@ function searchLocation(query) {
 }
 
 // Update informasi pengantaran
+// Update informasi pengantaran
 function updateDeliveryInfo(latlng) {
     if (!latlng || isNaN(latlng.lat) || isNaN(latlng.lng) ||
         latlng.lat < -90 || latlng.lat > 90 || latlng.lng < -180 || latlng.lng > 180) {
@@ -188,14 +189,20 @@ function updateDeliveryInfo(latlng) {
             document.getElementById('delivery-distance').value = distance.toFixed(2) + ' km';
 
             let deliveryCost = 0;
-            const NEAR_DISTANCE = 5;
-            const FAR_DISTANCE = 50;
-            if (distance < NEAR_DISTANCE) {
-                deliveryCost = 0;
-            } else if (distance <= FAR_DISTANCE) {
-                deliveryCost = 100000;
+            const FREE_DELIVERY_DISTANCE = 5; // Batas untuk pengantaran gratis
+            const MAX_DELIVERY_DISTANCE = 8; // Batas maksimum untuk pengantaran
+
+            if (distance > MAX_DELIVERY_DISTANCE) {
+                console.error('Jarak pengantaran melebihi 10 km:', distance);
+                toastr.error('Jarak pengantaran melebihi 10 km. Pengantaran tidak tersedia untuk lokasi ini.', 'Error');
+                resetDeliveryInfo();
+                return;
+            }
+
+            if (distance <= FREE_DELIVERY_DISTANCE) {
+                deliveryCost = 0; // Gratis untuk jarak < 8 km
             } else {
-                deliveryCost = 200000;
+                deliveryCost = 50000; // Biaya Rp 50.000 untuk jarak > 8 km dan ≤ 10 km
             }
 
             document.getElementById('delivery-cost').value = 'Rp ' + deliveryCost.toLocaleString('id-ID');
@@ -213,14 +220,20 @@ function updateDeliveryInfo(latlng) {
             document.getElementById('delivery-distance').value = distance.toFixed(2) + ' km';
 
             let deliveryCost = 0;
-            const NEAR_DISTANCE = 5;
-            const FAR_DISTANCE = 50;
-            if (distance < NEAR_DISTANCE) {
-                deliveryCost = 0;
-            } else if (distance <= FAR_DISTANCE) {
-                deliveryCost = 100000;
+            const FREE_DELIVERY_DISTANCE = 5; // Batas untuk pengantaran gratis
+            const MAX_DELIVERY_DISTANCE = 8; // Batas maksimum untuk pengantaran
+
+            if (distance > MAX_DELIVERY_DISTANCE) {
+                console.error('Jarak pengantaran melebihi 10 km:', distance);
+                toastr.error('Jarak pengantaran melebihi 10 km. Pengantaran tidak tersedia untuk lokasi ini.', 'Error');
+                resetDeliveryInfo();
+                return;
+            }
+
+            if (distance <= FREE_DELIVERY_DISTANCE) {
+                deliveryCost = 0; // Gratis untuk jarak < 8 km
             } else {
-                deliveryCost = 200000;
+                deliveryCost = 50000; // Biaya Rp 50.000 untuk jarak > 8 km dan ≤ 10 km
             }
 
             document.getElementById('delivery-cost').value = 'Rp ' + deliveryCost.toLocaleString('id-ID');
@@ -471,3 +484,54 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+function updateDetailRating(mobilId) {
+    console.log('Mengambil rating untuk mobil ID:', mobilId);
+    fetch(`/get_rating_and_comment?car_id=${mobilId}`)
+        .then(response => {
+            if (!response.ok) {
+                console.error('HTTP error:', response.status, response.statusText);
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data dari server:', data);
+            if (data.error) {
+                console.error('Error dari server:', data.error);
+                return;
+            }
+            const ratingStars = document.querySelector('#rating-stars');
+            const currentRating = document.querySelector('#current-rating');
+            const comment = document.querySelector('#comment');
+            if (ratingStars && currentRating && comment) {
+                ratingStars.innerHTML = '';
+                const rating = data.rating || 0;
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('i');
+                    star.className = `fa fa-star ${i <= rating ? 'star-rated' : 'star'}`;
+                    ratingStars.appendChild(star);
+                }
+                currentRating.textContent = `${Math.round(rating)}/5`; // Bulatkan rating tanpa desimal
+                comment.textContent = data.comment || 'Belum ada komentar.';
+            } else {
+                console.error('Elemen tidak ditemukan:', {
+                    ratingStars: !!ratingStars,
+                    currentRating: !!currentRating,
+                    comment: !!comment
+                });
+            }
+        })
+        .catch(error => console.error('Error fetching rating and comment:', error));
+}
+
+// Inisialisasi rating saat DOM dimuat
+document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mobilId = urlParams.get('id');
+    console.log('Mobil ID dari URL:', mobilId);
+    if (mobilId) {
+        updateDetailRating(mobilId);
+    } else {
+        console.error('Mobil ID tidak ditemukan di URL');
+    }
+});

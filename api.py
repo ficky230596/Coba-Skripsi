@@ -390,7 +390,7 @@ def create_transaction():
         logger.error(f"Data tidak lengkap: id_mobil={id_mobil}, user_id={user_id}")
         return jsonify({"status": "error", "message": "Data tidak lengkap."}), 400
 
-    valid_delivery_costs = [0, 100000, 200000]
+    valid_delivery_costs = [0,50000, 100000, 200000]
     if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
         logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
         return (
@@ -1027,9 +1027,9 @@ def check_transaction_status():
                 200,
             )
 
-        # Periksa apakah rating sudah diberikan
+        # Periksa apakah rating sudah diberikan untuk transaksi ini
         rating_exists = db.ratings.find_one(
-            {"car_id": transaction["id_mobil"], "user_id": user_id}
+            {"car_id": transaction["id_mobil"], "user_id": user_id, "order_id": transaction["order_id"]}
         )
         if rating_exists:
             db.transaction.update_one(
@@ -1041,7 +1041,7 @@ def check_transaction_status():
                 200,
             )
 
-        # Kembalikan car_id untuk redirect
+        # Kembalikan car_id dan order_id untuk redirect
         return (
             jsonify(
                 {
@@ -1058,7 +1058,6 @@ def check_transaction_status():
         return jsonify({"result": "error", "msg": "Sesi kedaluwarsa"}), 401
     except jwt.InvalidTokenError:
         return jsonify({"result": "error", "msg": "Token tidak valid"}), 401
-
 
 @api.route("/api/search-dashboard")
 def searchDahboard():

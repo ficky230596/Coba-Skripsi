@@ -298,15 +298,16 @@
     <div class="car-list owl-carousel">
         {% for dt in data_mobil %}
         <div class="card border-1 rounded-4 overflow-hidden">
-            <img src="{{ url_for('static', filename='Gambar/mobil/') }}{{dt.gambar}}" alt="{{dt.gambar}}" id="gambar_mobil"
-                class="card-img-top">
+            <img src="{{ url_for('static', filename='Gambar/mobil/') }}{{dt.gambar}}" alt="{{dt.gambar}}"
+                id="gambar_mobil" class="card-img-top">
             <div class="card-body">
                 <h3 class="mb-2 text-primary">{{dt.merek}} {{ dt.type_mobil }}</h3>
                 <div class="car-info d-flex justify-content-between align-items-center">
                     <div class="car-info-item d-flex align-items-center">
                         <i class="eicon-seat pe-2 fs-5"></i>
-                        <span>{{dt.seat}}</span>
+                        <span>Seat: {{dt.seat}}</span>
                     </div>
+
                     <div class="car-info-item d-flex align-items-center">
                         <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
                         <span>{{dt.bahan_bakar}}</span>
