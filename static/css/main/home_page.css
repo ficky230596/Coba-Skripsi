@@ -17,6 +17,12 @@
     }
 }
 
+/* Atur ukuran font untuk nama mobil dan tipe di daftar mobil */
+.car-list-section h3 {
+    font-size: 1.5rem; /* ~24px, sesuaikan sesuai kebutuhan */
+    font-weight: 600; /* Berat font untuk menonjolkan nama mobil */
+}
+
 .fade-in {
     opacity: 0;
     transition: opacity 0.5s ease, transform 0.5s ease;

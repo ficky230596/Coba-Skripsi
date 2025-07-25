@@ -28,7 +28,9 @@
         <option value="4">Mobil Digunakan</option>
       </select>
     </div>
-    
+    <div class="col-auto">
+      <button class="btn btn-secondary" id="reload-page">Batal</button>
+    </div>
     <div class="col-auto" id="tanggal" hidden></div>
   </div>
 </div>
@@ -42,7 +44,7 @@
         <th scope="col">Tipe Mobil</th>
         <th scope="col">Plat</th>
         <th scope="col">Penyewa</th>
-        <th scope="col">Lama Rental</th>
+        <th scope="col">Hari</th>
         <th scope="col">Total</th>
         <th scope="col">Tanggal Rental</th>
         <th scope="col">Akhir Rental</th>
@@ -107,8 +109,8 @@
                 <p><strong>Total:</strong> <span id="modal-total" class="text-muted"></span></p>
                 <p><strong>Tanggal Rental:</strong> <span id="modal-date-rent" class="text-muted"></span></p>
                 <p><strong>Akhir Rental:</strong> <span id="modal-end-rent" class="text-muted"></span></p>
-                <p><strong>Waktu Tersisa:</strong> <span id="modal-countdown" data-return-status=""
-                    data-actual-return-date="" data-actual-return-time="" class="text-muted"></span></p>
+                <!-- <p><strong>Waktu Tersisa:</strong> <span id="modal-countdown" data-return-status=""
+                    data-actual-return-date="" data-actual-return-time="" class="text-muted"></span></p> -->
                 <p><strong>Status:</strong> <span id="modal-status" class="text-muted"></span></p>
                 <p><strong>Biaya Sopir:</strong> <span id="modal-biaya-sopir" class="text-muted"></span></p>
                 <p><strong>Pengantaran:</strong> <span id="modal-gunakan-pengantaran" class="text-muted"></span></p>

@@ -47,7 +47,7 @@
                 <div class="rounded p-3 item shadow">
                     <img src="{{ url_for('static', filename='icon/believe.png') }}" alt=""
                         style="height: 4rem; width:4rem;">
-                    <h4 class=" unrated">Kepercayaan</h4>
+                    <h4 class="text-primary">Kepercayaan</h4>
                     <p class="text-justify">Banyak dari pelanggan kami adalah pelanggan setia yang terus kembali
                         menggunakan layanan kami.</p>
                 </div>
@@ -77,7 +77,7 @@
 <section class="flow-section">
     <div class="text-center border p-5 rounded cont">
         <h2 class="fs-2 mb-4 pb-3">Bagaimana Memulainya?</h2>
-        <div class="row row-cols-4 gx-3">
+        <div class="row row-cols-5 gx-3">
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">1</div>
@@ -102,11 +102,23 @@
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">4</div>
-                    <h4 class="title-number">Datang ke kantor</h4>
-                    <div class="text-center p-2">Datang ke kantor untuk menyerahkan bukti pembayaran dan KTP setelah itu
-                        mobil siap digunakan</div>
+                    <h4 class="title-number">Ambil Mobil</h4>
+                    <div class="text-center p-2">Datang ke kantor dengan bukti pembayaran dan KTP untuk mengambil mobil.
+                    </div>
                 </div>
             </div>
+            <div class="col">
+                <div class="col-item rounded shadow position-relative">
+                    <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">5</div>
+                    <h4 class="title-number">Atau Pilih Pengantaran</h4>
+                    <div class="text-center p-2">Pilih pengantaran agar mobil diantar ke lokasi Anda (biaya 0, 50.000,
+                        100.000, atau 200.000 tergantung jarak).</div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <small class="text-muted">*Setelah pembayaran, pilih antara mengambil mobil di kantor atau menggunakan
+                layanan pengantaran.</small>
         </div>
     </div>
 </section>
@@ -132,15 +144,16 @@
     <div class="car-list owl-carousel">
         {% for dt in data %}
         <div class="card border-1 rounded-4 overflow-hidden">
-            <img src="{{ url_for('static', filename='Gambar/mobil/') }}{{dt.gambar}}" alt="{{dt.gambar}}" id="gambar_mobil"
-                class="card-img-top">
+            <img src="{{ url_for('static', filename='Gambar/mobil/') }}{{dt.gambar}}" alt="{{dt.gambar}}"
+                id="gambar_mobil" class="card-img-top">
             <div class="card-body">
                 <h3 class="mb-2 text-primary">{{dt.merek}} {{ dt.type_mobil }}</h3>
                 <div class="car-info d-flex justify-content-between align-items-center">
                     <div class="car-info-item d-flex align-items-center">
                         <i class="eicon-seat pe-2 fs-5"></i>
-                        <span>{{dt.seat}}</span>
+                        <span>Seat: {{dt.seat}}</span>
                     </div>
+
                     <div class="car-info-item d-flex align-items-center">
                         <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
                         <span>{{dt.bahan_bakar}}</span>

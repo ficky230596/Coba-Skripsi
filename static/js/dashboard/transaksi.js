@@ -587,4 +587,7 @@ $(document).ready(function () {
       });
     }
   });
+    $(document).on('click', '#reload-page', function () {
+    location.reload(); // Reload halaman
+  });
 });

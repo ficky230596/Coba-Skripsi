@@ -1021,32 +1021,34 @@ def rating():
         if not user_id:
             raise jwt.exceptions.DecodeError
 
-        # Mengambil car_id dari query parameter
+        # Mengambil car_id dan order_id dari query parameter
         car_id = request.args.get('car_id')
-        if not car_id:
-            return "Mobil ID tidak ditemukan.", 400
+        order_id = request.args.get('order_id')  # Tambahkan order_id
+        if not car_id or not order_id:
+            return "Mobil ID atau Order ID tidak ditemukan.", 400
 
-        # Verifikasi transaksi selesai untuk car_id dan user_id
+        # Verifikasi transaksi selesai untuk car_id, user_id, dan order_id
         transaction = db.transaction.find_one({
             'id_mobil': car_id,
             'user_id': user_id,
+            'order_id': order_id,
             'status_mobil': 'selesai',
             'rating_prompted': True
         })
         if not transaction:
-            return "Anda tidak memiliki transaksi selesai untuk mobil ini.", 403
+            return "Anda tidak memiliki transaksi selesai untuk transaksi ini.", 403
 
         # Mengambil data rating dan komentar dari database
-        rating_data = db.ratings.find_one({"car_id": car_id, "user_id": user_id})
+        rating_data = db.ratings.find_one({"car_id": car_id, "user_id": user_id, "order_id": order_id})
         if rating_data:
             rating_value = rating_data.get('rating')
             comment_value = rating_data.get('komentar')
         else:
             rating_value = 0
-            comment_value = "Belum ada komentar."
+            comment_value = ""
 
-        # Render halaman rating dengan user_id, car_id, rating, dan komentar
-        return render_template('main/rating.html', car_id=car_id, user_id=user_id, rating=rating_value, comment=comment_value)
+        # Render halaman rating dengan user_id, car_id, order_id, rating, dan komentar
+        return render_template('main/rating.html', car_id=car_id, user_id=user_id, order_id=order_id, rating=rating_value, comment=comment_value)
 
     except jwt.ExpiredSignatureError:
         msg = createSecreteMassage('Sesi Anda telah kedaluwarsa, silakan login kembali')
@@ -1061,12 +1063,13 @@ def submit_rating():
     komentar = request.form.get('comment')
     car_id = request.form.get('car_id')
     user_id = request.form.get('user_id')
+    order_id = request.form.get('order_id')  # Tambahkan order_id dari form
 
     # Debugging output
-    print(f"Rating: {rating}, Komentar: {komentar}, Car ID: {car_id}, User ID: {user_id}")
+    print(f"Rating: {rating}, Komentar: {komentar}, Car ID: {car_id}, User ID: {user_id}, Order ID: {order_id}")
 
     # Validasi data yang diterima
-    if not all([rating, car_id, user_id]):
+    if not all([rating, car_id, user_id, order_id]):
         missing_fields = []
         if not rating:
             missing_fields.append("rating")
@@ -1074,26 +1077,30 @@ def submit_rating():
             missing_fields.append("car_id")
         if not user_id:
             missing_fields.append("user_id")
+        if not order_id:
+            missing_fields.append("order_id")
         print(f"Missing fields: {missing_fields}")
         return jsonify({'result': 'failed', 'msg': 'Semua data harus diisi'}), 400
 
-    # Verifikasi transaksi selesai untuk car_id dan user_id
+    # Verifikasi transaksi selesai untuk car_id, user_id, dan order_id
     transaction = db.transaction.find_one({
         'id_mobil': car_id,
         'user_id': user_id,
+        'order_id': order_id,
         'status_mobil': 'selesai',
         'rating_prompted': True
     })
     if not transaction:
         return jsonify({'result': 'failed', 'msg': 'Transaksi tidak valid atau sudah diberi rating'}), 403
 
-    # Periksa apakah rating sudah ada
-    if db.ratings.find_one({'car_id': car_id, 'user_id': user_id}):
-        return jsonify({'result': 'failed', 'msg': 'Anda sudah memberikan rating untuk mobil ini'}), 400
+    # Periksa apakah rating sudah ada untuk transaksi ini
+    if db.ratings.find_one({'car_id': car_id, 'user_id': user_id, 'order_id': order_id}):
+        return jsonify({'result': 'failed', 'msg': 'Anda sudah memberikan rating untuk transaksi ini'}), 400
 
     rating_data = {
         'user_id': user_id,
         'car_id': car_id,
+        'order_id': order_id,  # Tambahkan order_id
         'rating': int(rating),
         'komentar': komentar,
         'timestamp': datetime.datetime.utcnow()
@@ -1123,14 +1130,16 @@ def get_rating_and_comment():
     if not ratings:
         return jsonify({"rating": 0, "comment": "Belum ada komentar."}), 200
 
-    rating_counts = Counter(rating['rating'] for rating in ratings)
-    most_common_rating, count = rating_counts.most_common(1)[0]
+    # Hitung rata-rata rating
+    total_rating = sum(rating['rating'] for rating in ratings)
+    average_rating = round(total_rating / len(ratings), 1)
+    # Ambil komentar terbaru
     latest_comment = max(ratings, key=lambda x: x['timestamp'])['komentar']
 
     return jsonify({
-        "rating": most_common_rating,
+        "rating": average_rating,
         "comment": latest_comment,
-        "count": count
+        "count": len(ratings)
     })
 
 @app.route('/logout')

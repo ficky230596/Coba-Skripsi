@@ -33,11 +33,12 @@ $(document).ready(function() {
             return;
         }
 
-        // Validasi car_id dan user_id
+        // Validasi car_id, user_id, dan order_id
         const car_id = $('input[name="car_id"]').val();
         const user_id = $('input[name="user_id"]').val();
-        if (!car_id || !user_id) {
-            $('#response-message').text('Car ID atau User ID tidak valid.').addClass('text-danger');
+        const order_id = $('input[name="order_id"]').val(); // Tambahkan order_id
+        if (!car_id || !user_id || !order_id) {
+            $('#response-message').text('Car ID, User ID, atau Order ID tidak valid.').addClass('text-danger');
             return;
         }
 
@@ -78,56 +79,4 @@ $(document).ready(function() {
             }
         });
     });
-});
-
-
-// Fungsi untuk memperbarui rating di bagian atas
-function updateDetailRating(mobilId) {
-    console.log('Mengambil rating untuk mobil ID:', mobilId);
-    fetch(`/get_rating_and_comment?car_id=${mobilId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Data dari server:', data);
-            if (data.error) {
-                console.error('Error dari server:', data.error);
-                return;
-            }
-            // Pilih elemen di bagian atas (detail mobil)
-            const ratingStars = document.querySelector('.col-md-6 #rating-stars');
-            const currentRating = document.querySelector('.col-md-6 #current-rating');
-
-            if (ratingStars && currentRating) {
-                ratingStars.innerHTML = '';
-                const rating = data.rating || 0;
-                for (let i = 1; i <= 5; i++) {
-                    const star = document.createElement('i');
-                    star.className = `fa fa-star ${i <= rating ? 'star-rated' : 'star'}`;
-                    ratingStars.appendChild(star);
-                }
-                currentRating.textContent = `${rating}/5`;
-            } else {
-                console.error('Elemen #rating-stars atau #current-rating tidak ditemukan di bagian atas');
-            }
-        })
-        .catch(error => console.error('Error fetching rating:', error));
-}
-
-// Inisialisasi rating saat DOM dimuat
-document.addEventListener("DOMContentLoaded", function () {
-    // ... kode existing ...
-
-    // Ambil mobilId dari URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const mobilId = urlParams.get('id');
-
-    if (mobilId) {
-        updateDetailRating(mobilId);
-    } else {
-        console.error('Mobil ID tidak ditemukan di URL');
-    }
 });

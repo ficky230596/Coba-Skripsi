@@ -1,26 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS dari CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/SweetAlert2/sweetalert2.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/toastr/toastr.css') }}">
+    <!-- SweetAlert2 CSS dari CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Toastr CSS dari CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- CSS Kustom (lokal) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/main_dashboard.css') }}">
     {% block css %}{% endblock %}
     <title>Rental Mobil Manado | Dashboard {% block title %}{% endblock %}</title>
 </head>
 <body class="bg-light">
-    <div id="loading" class="position-fixed bg-white" style="height: 100vh; width:100vw; z-index: 1000;">
+    <div id="loading" class="loading-overlay">
         <div class="loading-spinner"></div>
     </div>
 
     <div class="d-flex">
         <!-- Sidebar -->
         <div id="sidebar" class="sidebar bg-primary text-white">
-            <div class="logo p-3 border-bottom">
-                <h3 class="m-0 fs-4">Rental Mobil Manado</h3>
+            <div class="logo p-3 border-bottom d-flex align-items-center">
+                <h3 class="m-0 fs-4"> Rental Mobil Manado</h3>
             </div>
             <ul class="nav flex-column p-3">
                 <li class="nav-item mb-2">
@@ -42,78 +46,80 @@
         </div>
 
         <!-- Konten Utama -->
-        <div class="flex-grow-1">
-            <div class="content-container">
-                <!-- Tombol Toggle untuk Desktop -->
-                <button id="sidebarToggle" class="btn btn-primary d-none d-lg-block position-fixed" style="top: 10px; left: 10px; z-index: 1000;">
+        <div class="flex-grow-1 content-wrapper">
+            <header class="header bg-white shadow-sm d-flex align-items-center justify-content-between p-3">
+                <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <!-- Tombol Hamburger untuk Mobile -->
-                <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" style="position: fixed; top: 10px; left: 10px; z-index: 1000;">
+                <button id="sidebarToggle" class="btn btn-primary d-none d-lg-block ms-3">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-
-                <div class="content p-4 bg-white shadow-sm">
+                <div class="header-title d-none d-lg-block">
+                    <h4>Admin Rental Mobil Manado</h4>
+                </div>
+                <div class="header-placeholder"></div>
+            </header>
+            <div class="content-container p-4">
+                <div class="content bg-white shadow-sm rounded">
                     {% block content %}
                     {% endblock %}
                 </div>
             </div>
-        </div>
 
-        <!-- Offcanvas untuk Mobile -->
-        <div class="offcanvas offcanvas-start bg-primary text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
-            <div class="offcanvas-header border-bottom">
-                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Rental Mobil Manado</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body">
-                <ul class="nav flex-column">
-                    <li class="nav-item mb-2">
-                        <a class="nav-link text-white fs-5" href="/dashboard"><i class="fa-solid fa-house pe-2"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link text-white fs-5" href="/data_mobil"><i class="fa-solid fa-car pe-2"></i> Data Mobil</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link text-white fs-5" href="/transaction"><i class="fa-solid fa-money-bill-1-wave pe-2"></i> Transaksi</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link text-white fs-5" href="/settings"><i class="fa-solid fa-gear pe-2"></i> Settings</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link text-white fs-5" onclick="logout()" style="cursor: pointer;"><i class="fa-solid fa-right-from-bracket pe-2"></i> Logout</a>
-                    </li>
-                </ul>
+            <!-- Offcanvas untuk Mobile -->
+            <div class="offcanvas offcanvas-start bg-primary text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+                <div class="offcanvas-header border-bottom">
+                    <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Rental Mobil Manado</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="nav flex-column">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white fs-5" href="/dashboard"><i class="fa-solid fa-house pe-2"></i> Dashboard</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white fs-5" href="/data_mobil"><i class="fa-solid fa-car pe-2"></i> Data Mobil</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white fs-5" href="/transaction"><i class="fa-solid fa-money-bill-1-wave pe-2"></i> Transaksi</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white fs-5" href="/settings"><i class="fa-solid fa-gear pe-2"></i> Settings</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white fs-5" onclick="logout()" style="cursor: pointer;"><i class="fa-solid fa-right-from-bracket pe-2"></i> Logout</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Skrip -->
-    <script src="https://kit.fontawesome.com/4e981ecd7b.js" crossorigin="anonymous"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
-        crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='plugins/SweetAlert2/sweetalert2.all.js') }}"></script>
-    <script src="{{ url_for('static', filename='plugins/toastr/toastr.js') }}"></script>
+    <!-- Font Awesome dari CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" 
+            integrity="sha512-GWzVrcGlo0TxTRvz9ttioyYJ+Wwk9Ck0G81D+eO63BaqHaJ3YZX9wuqjwgfcV/MrB2PhaVX9DkYVhbFpStnqpQ==" 
+            crossorigin="anonymous"></script>
+    <!-- jQuery dari CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+            crossorigin="anonymous"></script>
+    <!-- js-cookie dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+    <!-- Popper.js dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" 
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" 
+            crossorigin="anonymous"></script>
+    <!-- Bootstrap JS dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" 
+            integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" 
+            crossorigin="anonymous"></script>
+    <!-- SweetAlert2 dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <!-- Toastr dari CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- Skrip Kustom (lokal) -->
     <script src="{{ url_for('static', filename='js/dashboard/main.js') }}"></script>
-    <script>
-        $(document).ready(function() {
-            // Toggle Sidebar di Desktop
-            $('#sidebarToggle').on('click', function() {
-                $('#sidebar').toggleClass('collapsed');
-                $('.content-container').toggleClass('expanded');
-            });
-
-            // Sembunyikan loading spinner setelah halaman dimuat
-            $('#loading').fadeOut(500);
-        });
-    </script>
     {% block javascript %}{% endblock %}
 </body>
 </html>
