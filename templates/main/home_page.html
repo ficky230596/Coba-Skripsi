@@ -11,9 +11,59 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main/home_page.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='icon/icon.css') }}">
 <style>
-    /* CSS untuk tata letak pencarian */
     .search-form-container {
         margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-group-buttons {
+        display: flex;
+        gap: 0;
+    }
+
+    .filter-btn,
+    .cancel-btn {
+        border-radius: 0;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 15px;
+        font-size: 0.9rem;
+    }
+
+    .filter-btn {
+        border-top-left-radius: 5px;
+        border-bottom-left-radius: 5px;
+    }
+
+    .cancel-btn {
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }
+
+    .filter-btn i {
+        margin-right: 5px;
+    }
+
+    .modal-content {
+        border-radius: 10px;
+    }
+
+    .modal-body .form-group {
+        margin-bottom: 15px;
+    }
+
+    .price-range {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .price-range input {
+        flex: 1;
     }
 </style>
 {% endblock %}
@@ -58,7 +108,7 @@
                         style="height: 4rem; width:4rem;">
                     <h4 class="text-primary">Mudah dan cepat</h4>
                     <p class="text-justify">Pemesanan begitu mudah dilakukan karena prosesnya tidak kompleks dan sangat
-                        ramah pengguna, memastikan pengalaman yang lancar.</p>
+                        ramah pengguna.</p>
                 </div>
             </div>
             <div class="col">
@@ -82,62 +132,131 @@
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">1</div>
                     <h4 class="title-number">Login</h4>
-                    <div class="text-center p-2">Sebelum memesan login terlebih dahulu atau mendaftar</div>
+                    <div class="text-center p-2">Login atau daftar untuk memulai pemesanan.</div>
                 </div>
             </div>
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">2</div>
                     <h4 class="title-number">Pilih Mobil</h4>
-                    <div class="text-center p-2">Pilih mobil yang ingin anda rental</div>
+                    <div class="text-center p-2">Pilih mobil yang ingin Anda sewa.</div>
                 </div>
             </div>
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">3</div>
-                    <h4 class="title-number">Bayar</h4>
-                    <div class="text-center p-2">Setelah memilih mobil anda akan di arahkan ke pembayaran</div>
+                    <h4 class="title-number">Buat Transaksi</h4>
+                    <div class="text-center p-2">Tentukan jumlah hari sewa, pilih sopir (opsional), dan pilih
+                        pengambilan mobil di kantor atau pengantaran ke lokasi Anda.</div>
                 </div>
             </div>
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">4</div>
-                    <h4 class="title-number">Ambil Mobil</h4>
-                    <div class="text-center p-2">Datang ke kantor dengan bukti pembayaran dan KTP untuk mengambil mobil.
-                    </div>
+                    <h4 class="title-number">Bayar</h4>
+                    <div class="text-center p-2">Lakukan pembayaran setelah mengkonfirmasi transaksi.</div>
                 </div>
             </div>
             <div class="col">
                 <div class="col-item rounded shadow position-relative">
                     <div class="bg-primary text-center rounded-pill m-auto shadow-sm" id="number">5</div>
-                    <h4 class="title-number">Atau Pilih Pengantaran</h4>
-                    <div class="text-center p-2">Pilih pengantaran agar mobil diantar ke lokasi Anda (biaya 0, 50.000,
-                        100.000, atau 200.000 tergantung jarak).</div>
+                    <h4 class="title-number">Terima Mobil</h4>
+                    <div class="text-center p-2">Ambil mobil di kantor dengan bukti pembayaran dan KTP, atau tunggu
+                        mobil diantar ke lokasi Anda.</div>
                 </div>
             </div>
         </div>
         <div class="text-center mt-3">
-            <small class="text-muted">*Setelah pembayaran, pilih antara mengambil mobil di kantor atau menggunakan
-                layanan pengantaran.</small>
+            <small  style="color: rgba(177, 0, 0, 0.767) ;">*Pengantaran ke lokasi pemesan dikenakan tarif jika melebihi
+                jarak yang ditentukan.</small>
         </div>
     </div>
 </section>
 
 <section class="car-list-section" id="list-mobil">
-    <!-- Bagian Pencarian -->
+    <!-- Bagian Pencarian dan Filter -->
     <div class="search-form-container">
-        <form id="search-form">
-            <div class="row">
-                <div class="col">
-                    <input type="text" class="form-control" name="search"
-                        placeholder="Cari mobil (merek, tipe, seat, bahan bakar, transmisi, harga)">
-                </div>
-                <div class="col-auto">
-
-                    <button type="button" class="btn btn-secondary" id="cancel-search">Batal</button>
+        <form id="search-form" class="w-100">
+            <div class="input-group">
+                <input type="text" class="form-control" name="search"
+                    placeholder="Cari mobil (merek, tipe, seat, bahan bakar, transmisi, harga)">
+                <div class="input-group-buttons">
+                    <button type="button" class="btn btn-primary filter-btn" data-bs-toggle="modal"
+                        data-bs-target="#filterModal">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <button type="button" class="btn btn-secondary cancel-btn" id="cancel-search">Batal</button>
                 </div>
             </div>
         </form>
+    </div>
+
+    <!-- Modal untuk Filter -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter Mobil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="brand">Merek</label>
+                        <select class="form-control" id="brand">
+                            <option value="">Pilih Merek</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Tipe</label>
+                        <select class="form-control" id="type">
+                            <option value="">Pilih Tipe</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bahan_bakar">Bahan Bakar</label>
+                        <select class="form-control" id="bahan_bakar">
+                            <option value="">Pilih Bahan Bakar</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="seat">Seat</label>
+                        <select class="form-control" id="seat">
+                            <option value="">Pilih Jumlah Seat</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transmisi">Transmisi</label>
+                        <select class="form-control" id="transmisi">
+                            <option value="">Pilih Transmisi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rating">Rating</label>
+                        <select class="form-control" id="rating">
+                            <option value="">Pilih Rating</option>
+                            <option value="0">Belum Ada Rating</option>
+                            <option value="1">1 Bintang</option>
+                            <option value="2">2 Bintang</option>
+                            <option value="3">3 Bintang</option>
+                            <option value="4">4 Bintang</option>
+                            <option value="5">5 Bintang</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Range Harga (per Hari)</label>
+                        <div class="price-range">
+                            <input type="number" class="form-control" id="min_price" placeholder="Harga Min" min="0">
+                            <span>-</span>
+                            <input type="number" class="form-control" id="max_price" placeholder="Harga Max" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="reset-filters">Reset</button>
+                    <button type="button" class="btn btn-primary" id="apply-filters">Terapkan</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <h2 class="mb-3 text-primary">List Mobil</h2>
@@ -153,7 +272,6 @@
                         <i class="eicon-seat pe-2 fs-5"></i>
                         <span>Seat: {{dt.seat}}</span>
                     </div>
-
                     <div class="car-info-item d-flex align-items-center">
                         <i class="fa-solid fa-gas-pump pe-2 fs-5"></i>
                         <span>{{dt.bahan_bakar}}</span>
@@ -172,11 +290,11 @@
                 <div class="d-flex align-items-center mt-2">
                     <span class="me-2">Rating:</span>
                     <div id="rating-stars"></div>
-                    <span id="current-rating" class="ms-2">0/5</span>
+                    <span id="current-rating" class="ms-2">{{dt.rating | default(0)}}/5</span>
                 </div>
                 <div class="d-flex mt-2">
                     <span class="me-2">Komentar:</span>
-                    <div id="comment" class="m-0"></div>
+                    <div id="comment" class="m-0">{{dt.komentar | default('Belum ada komentar')}}</div>
                 </div>
                 <div class="d-flex">
                     <a class="btn car-btn btn-primary m-auto w-100 rounded-5"
@@ -185,6 +303,7 @@
             </div>
         </div>
         {% else %}
+        <p>Tidak ada mobil yang tersedia.</p>
         {% endfor %}
     </div>
 </section>
