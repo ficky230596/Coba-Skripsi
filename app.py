@@ -128,39 +128,108 @@ def welcome():
     except jwt.exceptions.DecodeError:
         return redirect(url_for('login'))
 
+# Perbarui endpoint /filter_mobil
 @app.route('/filter_mobil', methods=['GET'])
 def filter_mobil():
     type_mobil = request.args.get('type_mobil')
     merek = request.args.get('merek')
     transmisi = request.args.get('transmisi')
     seat = request.args.get('seat')
-    harga = request.args.get('harga')
+    bahan_bakar = request.args.get('bahan_bakar')
+    rating = request.args.get('rating')
+    min_price = request.args.get('min_price')
+    max_price = request.args.get('max_price')
 
-    logger.info(f'Filter: type_mobil={type_mobil}, merek={merek}, transmisi={transmisi}, seat={seat}, harga={harga}')
+    logger.info(f'Filter: type_mobil={type_mobil}, merek={merek}, transmisi={transmisi}, seat={seat}, bahan_bakar={bahan_bakar}, rating={rating}, min_price={min_price}, max_price={max_price}')
 
     query = {'status': 'Tersedia', 'visibility': 'visible'}
     if type_mobil:
-        query['type_mobil'] = {'$regex': type_mobil, '$options': 'i'}  # Case-insensitive
+        query['type_mobil'] = {'$regex': type_mobil, '$options': 'i'}
     if merek:
         query['merek'] = {'$regex': merek, '$options': 'i'}
     if transmisi:
         query['transmisi'] = transmisi
     if seat:
+        query['seat'] = seat  # Gunakan seat sebagai string
+        logger.info(f'Applying seat filter: {seat}')
+    if bahan_bakar:
+        query['bahan_bakar'] = bahan_bakar
+    if min_price or max_price:
+        price_query = {}
         try:
-            query['seat'] = int(seat)
+            if min_price:
+                price_query['$gte'] = int(min_price)
+            if max_price:
+                price_query['$lte'] = int(max_price)
+            if price_query:
+                # Gunakan $expr untuk menangani harga sebagai string
+                query['$expr'] = {
+                    '$and': [
+                        {'$gte': [{'$toInt': '$harga'}, price_query.get('$gte', 0)]} if min_price else {},
+                        {'$lte': [{'$toInt': '$harga'}, price_query.get('$lte', float('inf'))]} if max_price else {}
+                    ]
+                }
+                query['$expr']['$and'] = [x for x in query['$expr']['$and'] if x]  # Hapus kondisi kosong
         except ValueError:
-            logger.error(f'Invalid seat value: {seat}')
-    if harga:
-        try:
-            query['harga'] = {'$lte': int(harga)}  # Harga maksimum
-        except ValueError:
-            logger.error(f'Invalid harga value: {harga}')
+            logger.error(f'Invalid price range: min_price={min_price}, max_price={max_price}')
 
+    logger.info(f'MongoDB query: {query}')
     data_mobil = list(db.dataMobil.find(query))
-    for mobil in data_mobil:
-        mobil['_id'] = str(mobil['_id'])
+    logger.info(f'Found {len(data_mobil)} cars before rating filter')
 
-    return jsonify(data_mobil)
+    filtered_mobil = []
+    # Filter berdasarkan rating
+    if rating:
+        try:
+            rating = float(rating)
+            for mobil in data_mobil:
+                ratings = list(db.ratings.find({'car_id': mobil['id_mobil']}))
+                if ratings:
+                    avg_rating = sum(r['rating'] for r in ratings) / len(ratings)
+                    if round(avg_rating) >= rating:
+                        mobil['_id'] = str(mobil['_id'])
+                        filtered_mobil.append(mobil)
+                else:
+                    if rating == 0:
+                        mobil['_id'] = str(mobil['_id'])
+                        filtered_mobil.append(mobil)
+        except ValueError:
+            logger.error(f'Invalid rating value: {rating}')
+    else:
+        for mobil in data_mobil:
+            mobil['_id'] = str(mobil['_id'])
+            filtered_mobil.append(mobil)
+
+    logger.info(f'Returning {len(filtered_mobil)} cars after filtering')
+    return jsonify(filtered_mobil)
+
+# Perbarui endpoint /get_filter_options
+@app.route('/get_filter_options', methods=['GET'])
+def get_filter_options():
+    brands = sorted(db.dataMobil.distinct('merek', {'status': 'Tersedia', 'visibility': 'visible'}))
+    fuels = sorted(db.dataMobil.distinct('bahan_bakar', {'status': 'Tersedia', 'visibility': 'visible'}))
+    transmissions = sorted(db.dataMobil.distinct('transmisi', {'status': 'Tersedia', 'visibility': 'visible'}))
+    seats = sorted([str(seat) for seat in db.dataMobil.distinct('seat', {'status': 'Tersedia', 'visibility': 'visible'}) if seat], key=str)
+    logger.info(f'Filter options: brands={brands}, fuels={fuels}, transmissions={transmissions}, seats={seats}')
+    return jsonify({
+        'brands': brands,
+        'fuels': fuels,
+        'transmissions': transmissions,
+        'seats': seats
+    })
+
+# Tambahkan endpoint untuk mengambil tipe mobil berdasarkan merek
+@app.route('/get_car_types', methods=['GET'])
+def get_car_types():
+    merek = request.args.get('merek')
+    if not merek:
+        return jsonify({'types': []})
+    types = sorted(db.dataMobil.distinct('type_mobil', {
+        'merek': {'$regex': merek, '$options': 'i'},
+        'status': 'Tersedia',
+        'visibility': 'visible'
+    }))
+    return jsonify({'types': types})
 
 @app.route('/search_mobil', methods=['GET'])
 def search_mobil():
