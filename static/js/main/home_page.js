@@ -37,6 +37,12 @@ $(document).ready(function () {
             .catch(error => console.error('Error fetching rating and comment:', error));
     }
 
+    // Perbarui rating dan komentar untuk kartu mobil saat halaman dimuat
+    document.querySelectorAll('.card').forEach(function (card) {
+        let mobilId = card.querySelector('a').href.split('=')[1];
+        updateRatingAndComment(card, mobilId);
+    });
+
     // Fungsi untuk memuat ulang daftar mobil awal
     function loadInitialCars() {
         $.ajax({
