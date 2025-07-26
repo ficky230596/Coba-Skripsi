@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from threading import Thread, Lock
 from time import sleep
+from pytz import timezone
 import hashlib
 import heapq
 import json
@@ -779,14 +780,6 @@ def transaction_success():
             400,
         )
 
-    # Perbarui waktu rental berdasarkan waktu saat ini
-    now = datetime.now()
-    date_rent = now.strftime("%d-%B-%Y")
-    time_rent = now.strftime("%H:%M")
-    end_time = now + timedelta(days=hari)
-    end_rent = end_time.strftime("%d-%B-%Y")
-    end_time = end_time.strftime("%H:%M")
-
     # Perbarui status transaksi dan mobil
     user_id = transaction["user_id"]
     user = db.users.find_one({"user_id": user_id})
@@ -811,15 +804,7 @@ def transaction_success():
     db.dataMobil.update_one({"id_mobil": idcar}, {"$set": data_update})
     db.transaction.update_one(
         {"order_id": orderid},
-        {
-            "$set": {
-                "status": "sudah bayar",
-                "date_rent": date_rent,
-                "time_rent": time_rent,
-                "end_rent": end_rent,
-                "end_time": end_time,
-            }
-        },
+        {"$set": {"status": "sudah bayar"}},
     )
 
     # Kirim notifikasi WhatsApp
@@ -1327,7 +1312,8 @@ def confirmPesanan():
         )
 
     # Perbarui waktu rental berdasarkan waktu saat ini
-    now = datetime.now()
+    wita = timezone('Asia/Makassar')
+    now = datetime.now(wita)
     date_rent = now.strftime("%d-%B-%Y")
     time_rent = now.strftime("%H:%M")
     end_time = now + timedelta(days=hari)
