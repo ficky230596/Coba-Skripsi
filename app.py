@@ -709,8 +709,6 @@ def login():
         except:
             return render_template('main/login.html')
  
-
-
   
         
 @app.route('/api/verify_password', methods=['POST'])
