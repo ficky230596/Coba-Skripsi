@@ -407,7 +407,7 @@ $(document).ready(function () {
                     if (xhr.status === 401) {
                         console.warn('Sesi kedaluwarsa, mengarahkan ke halaman login...');
                         clearInterval(interval);
-                        window.location.href = '/login';
+                        window.location.href = '/';
                     }
                 }
             });

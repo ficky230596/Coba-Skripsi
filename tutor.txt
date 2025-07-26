@@ -1,5 +1,3 @@
 git add .
-
-git commit -m "Tambah filter"
-
-git push origin main
+git commit -m "perbaiki riderect"
+git push
