@@ -17,7 +17,11 @@
     margin: 0 auto;
     padding: 15px;
 }
-
+body.dark-mode .card,
+body.dark-mode .modal-content {
+    background-color: var(--card-bg);
+    color: var(--card-text);
+}
 /*
 
 .card {

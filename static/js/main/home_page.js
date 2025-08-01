@@ -1,13 +1,17 @@
 $(document).ready(function () {
-    // Inisialisasi Owl Carousel
+    // Inisialisasi Owl Carousel dengan navigasi responsif
     $('.owl-carousel').owlCarousel({
         loop: false,
         margin: 10,
-        nav: false,
+        nav: true,
+        navText: [
+            '<i class="fas fa-chevron-left"></i>',
+            '<i class="fas fa-chevron-right"></i>'
+        ],
         responsive: {
-            0: { items: 1 },
-            600: { items: 2 },
-            1000: { items: 4 }
+            0: { items: 1, nav: true },
+            600: { items: 2, nav: true },
+            1000: { items: 4, nav: true }
         }
     });
 
@@ -103,11 +107,15 @@ $(document).ready(function () {
                 $('.owl-carousel').owlCarousel({
                     loop: false,
                     margin: 10,
-                    nav: false,
+                    nav: true,
+                    navText: [
+                        '<i class="fas fa-chevron-left"></i>',
+                        '<i class="fas fa-chevron-right"></i>'
+                    ],
                     responsive: {
-                        0: { items: 1 },
-                        600: { items: 2 },
-                        1000: { items: 4 }
+                        0: { items: 1, nav: true },
+                        600: { items: 2, nav: true },
+                        1000: { items: 4, nav: true }
                     }
                 });
             },
@@ -260,11 +268,15 @@ $(document).ready(function () {
                 $('.owl-carousel').owlCarousel({
                     loop: false,
                     margin: 10,
-                    nav: false,
+                    nav: true,
+                    navText: [
+                        '<i class="fas fa-chevron-left"></i>',
+                        '<i class="fas fa-chevron-right"></i>'
+                    ],
                     responsive: {
-                        0: { items: 1 },
-                        600: { items: 2 },
-                        1000: { items: 4 }
+                        0: { items: 1, nav: true },
+                        600: { items: 2, nav: true },
+                        1000: { items: 4, nav: true }
                     }
                 });
                 $('#filterModal').modal('hide');
@@ -290,6 +302,14 @@ $(document).ready(function () {
         updateTypeOptions();
         loadInitialCars();
         $('#filterModal').modal('hide');
+    });
+
+    // Alihkan fokus sebelum modal ditutup untuk menghindari peringatan aria-hidden
+    $('#filterModal').on('hide.bs.modal', function () {
+        const carListSection = document.querySelector('#list-mobil');
+        if (carListSection) {
+            carListSection.focus();
+        }
     });
 
     // Panggil fungsi untuk mengisi opsi filter saat halaman dimuat
@@ -356,11 +376,15 @@ $(document).ready(function () {
                 $('.owl-carousel').owlCarousel({
                     loop: false,
                     margin: 10,
-                    nav: false,
+                    nav: true,
+                    navText: [
+                        '<i class="fas fa-chevron-left"></i>',
+                        '<i class="fas fa-chevron-right"></i>'
+                    ],
                     responsive: {
-                        0: { items: 1 },
-                        600: { items: 2 },
-                        1000: { items: 4 }
+                        0: { items: 1, nav: true },
+                        600: { items: 2, nav: true },
+                        1000: { items: 4, nav: true }
                     }
                 });
             },

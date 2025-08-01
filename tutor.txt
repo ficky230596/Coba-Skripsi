@@ -1,3 +1,8 @@
 git add .
 git commit -m "perbaiki riderect"
 git push
+
+
+perbarui filter jarena terdapat duplikat nama tapi beda mobil
+
+dan bintang

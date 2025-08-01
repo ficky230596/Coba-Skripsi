@@ -20,88 +20,177 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main/main.css') }}">
 
-    {% block css %}
+    <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --header-bg: #f8f9fa;
+            --footer-bg: #f8f9fa;
+            --modal-bg: #ffffff;
+            --modal-text: #000000;
+            --card-bg: #ffffff;
+            --card-text: #000000;
+            --icon-color: #000000;
+        }
 
+        .dark-mode {
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-bg: #2c2c2c;
+            --footer-bg: #2c2c2c;
+            --modal-bg: #2c2c2c;
+            --modal-text: #ffffff;
+            --card-bg: #2c2c2c;
+            --card-text: #ffffff;
+            --icon-color: #ffffff;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background-color: var(--header-bg);
+        }
+
+        footer {
+            background-color: var(--footer-bg);
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+
+        .dropdown-menu {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+
+        .dropdown-item {
+            color: var(--modal-text);
+        }
+
+        .dropdown-item.text-danger {
+            color: #dc3545 !important;
+        }
+
+        .card,
+        .card-body,
+        .card-title,
+        .card-text {
+            background-color: var(--card-bg);
+            color: var(--card-text);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .bi,
+        .fa {
+            color: var(--icon-color);
+            transition: color 0.3s;
+        }
+
+        .btn-close {
+            filter: none;
+            opacity: 0.5;
+        }
+
+        .dark-mode .btn-close {
+            filter: invert(1);
+            opacity: 0.7;
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 0.5rem;
+        }
+
+        .social-icons a {
+            color: var(--icon-color);
+        }
+    </style>
+
+    <!-- Inline script to prevent white flash -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+
+    {% block css %}
     {% endblock %}
     <title>Rental Mobil Manado {% block title %}{% endblock %}</title>
-    <link rel="icon" href="{{ url_for('static', filename='icon/logo3.png') }}" type="image/png/">
-
+    <link rel="icon" href="{{ url_for('static', filename='icon/logo3.png') }}" type="image/png">
 </head>
 
 <body>
     <header class="shadow">
-        <div class="logo"><a href="/">Rental Mobil Manado </a></div>
-        {% if user_info %}
-        <div class="dropdown-center">
-
-            <img src="{{ url_for('static', filename=user_info.profile_image_path.lstrip('static/')) if user_info.profile_image_path else url_for('static', filename='icon/user.jpg') }}"
-                class="rounded-circle bg-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" alt=""
-                style="height: 3.5rem; width:3.5rem; object-fit:cover; cursor:pointer;">
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item fs-6" href="/transaksi">Transaksi</a></li>
-                <li><a class="dropdown-item fs-6" href="/profile">Settings</a></li>
-                <li><a onclick="logout()" class="dropdown-item fs-6 text-danger " style="cursor: pointer;">Logout</a>
-                </li>
-            </ul>
-        </div>
-        {% else %}
-        <a href="/login" class="text-primary fs-5">
-            <i class="bi bi-box-arrow-in-right me-1"></i> Login
-        </a>
-
-        {% endif %}
-        <!-- <nav>
-            <a href="/transaksi">Transaksi</a>
-            <a href="/profile">Settings</a>
+        <div class="logo"><a href="/">Rental Mobil Manado</a></div>
+        <div class="d-flex align-items-center">
             {% if user_info %}
-            <a onclick="logout()" class="text-danger" style="cursor: pointer;">Logout</a>
+            <div class="dropdown-center">
+                <img src="{{ url_for('static', filename=user_info.profile_image_path.lstrip('static/')) if user_info.profile_image_path else url_for('static', filename='icon/user.jpg') }}"
+                    class="rounded-circle bg-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
+                    alt="Profile Picture" style="height: 3.5rem; width:3.5rem; object-fit:cover; cursor:pointer;">
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item fs-6" href="/transaksi">Transaction History</a></li>
+                    <li><a class="dropdown-item fs-6" href="/profile">Account Settings</a></li>
+                    <li><a class="dropdown-item fs-6" href="#" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+            <i class="bi bi-moon-fill theme-toggle ms-3" id="themeToggle" title="Toggle Dark Mode"></i>
             {% else %}
-            <a href="/login">Login</a>
+            <a href="/login" class="text-primary fs-5">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+            </a>
+            <i class="bi bi-moon-fill theme-toggle ms-3" id="themeToggle" title="Toggle Dark Mode"></i>
             {% endif %}
-        </nav> -->
+        </div>
     </header>
     <div class="px-10">
         {% block content %}
-
         {% endblock %}
 
         <footer class="footer">
             <div class="container d-flex justify-content-between">
                 <div class="footer-content">
                     <h3>Rental Mobil Manado</h3>
-                    <p>Rental Mobil Manado adalah penyedia layanan sewa mobil terpercaya di Manado. Kami menawarkan
-                        berbagai
-                        jenis mobil dengan harga yang kompetitif.</p>
+                    <p>Rental Mobil Manado provides trusted car rental services in Manado, offering a variety of
+                        high-quality vehicles for your travel needs.</p>
                 </div>
                 <div class="footer-content text-center">
                     <h3>Quick Links</h3>
                     <ul class="list">
                         <li><a href="/">Home</a></li>
-                        <li><a href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About</a></li>
+                        <li><a href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About Us</a></li>
                         <li><a href="#" data-bs-toggle="modal" data-bs-target="#servicesModal">Services</a></li>
-                        <li><a href="#list-mobil">Pilih Mobil</a></li>
+                        <li><a href="#list-mobil">Choose Vehicle</a></li>
                     </ul>
                 </div>
                 <div class="footer-content text-right">
                     <h3>Contact Us</h3>
-                    <p>Email: RentalMobilManado@gmail.com</p>
-                    <p>Phone: 082248139051</p>
-                    <p>Jl. Ficky. Rahanubun. Merdeka No.FR23, Kota Manado</p>
+                    <p>Email: rentalmobilmanado@gmail.com</p>
+                    <p>Phone: +6282248139051</p>
+                    <p>Address: Jl. Ficky Rahanubun No. FR23, Merdeka, Kota Manado</p>
                     <div class="social-icons mt-3">
-                        <a href="" class="d-inline-block mr-2"><i class="fab fa-facebook"></i></a>
-                        <a href="" class="d-inline-block mr-2"><i class="fab fa-twitter"></i></a>
-                        <a href="" class="d-inline-block mr-2"><i class="fab fa-instagram"></i></a>
-                        <a href="" class="d-inline-block mr-2"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://facebook.com" class="d-inline-block mr-2"><i class="fab fa-facebook"></i></a>
+                        <a href="https://twitter.com" class="d-inline-block mr-2"><i class="fab fa-twitter"></i></a>
+                        <a href="https://instagram.com" class="d-inline-block mr-2"><i class="fab fa-instagram"></i></a>
+                        <a href="https://linkedin.com" class="d-inline-block mr-2"><i class="fab fa-linkedin"></i></a>
                     </div>
                 </div>
             </div>
             <div class="bottom-bar text-center mt-3">
-                <p>&copy; 2025 Rental Mobil Manado | . All rights reserved</p>
+                <p>&copy; 2025 Rental Mobil Manado. All rights reserved.</p>
             </div>
         </footer>
 
         <!-- Floating WhatsApp Button -->
-        <a href="https://wa.me/6282248139051" target="_blank" class="whatsapp-float">
+        <a href="https://wa.me/6282248139051" target="_blank" class="whatsapp-float"
+            aria-label="Contact us via WhatsApp">
             <img src="{{ url_for('static', filename='icon/wa2.png') }}" alt="WhatsApp" class="whatsapp-icon">
         </a>
 
@@ -113,9 +202,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Welcome to Rental Mobil Manado | , your trusted car rental service provider in Manado. We
-                            offer a
-                            variety of cars at competitive prices.</p>
+                        <p>Welcome to Rental Mobil Manado, your trusted car rental service provider in Manado. Enjoy the
+                            convenience of renting vehicles at the best prices.</p>
                     </div>
                 </div>
             </div>
@@ -125,13 +213,12 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="aboutModalLabel">About</h5>
+                        <h5 class="modal-title" id="aboutModalLabel">About Us</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Rental Mobil Manado | is a trusted car rental service provider in Jakarta. We offer a variety
-                            of cars
-                            at competitive prices.</p>
+                        <p>Rental Mobil Manado is a trusted car rental service provider in Manado, offering a wide range
+                            of vehicles to support your mobility needs.</p>
                     </div>
                 </div>
             </div>
@@ -146,8 +233,9 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>We offer a wide range of services including car rental for daily, weekly, and monthly use.
-                            Our cars are well-maintained</p>
+                        <p>We offer car rental services for daily, weekly, and monthly needs with well-maintained
+                            vehicles. Enjoy the convenience of vehicle delivery to your location and the option to rent
+                            with a professional driver for a more comfortable journey.</p>
                     </div>
                 </div>
             </div>
@@ -167,11 +255,62 @@
         <script src="{{ url_for('static', filename='plugins/SweetAlert2/sweetalert2.all.js') }}"></script>
         <script src="{{ url_for('static', filename='plugins/toastr/toastr.js') }}"></script>
 
-        {% block js %}
+        <script>
+            function initializeThemeToggle() {
+                const themeToggles = document.querySelectorAll('#themeToggle');
+                const body = document.body;
 
+                if (themeToggles.length > 0) {
+                    console.log('Theme toggle initialized');
+                    // Initialize theme based on localStorage
+                    if (localStorage.getItem('theme') === 'dark') {
+                        body.classList.add('dark-mode');
+                        themeToggles.forEach(toggle => {
+                            const icon = toggle.tagName === 'I' ? toggle : toggle.querySelector('i');
+                            if (icon) {
+                                icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+                            }
+                        });
+                    }
+
+                    // Add event listener to all theme toggle elements
+                    themeToggles.forEach(toggle => {
+                        toggle.addEventListener('click', (e) => {
+                            if (toggle.tagName === 'A') {
+                                e.preventDefault(); // Prevent default link behavior
+                            }
+                            console.log('Theme toggle clicked');
+                            body.classList.toggle('dark-mode');
+                            const icon = toggle.tagName === 'I' ? toggle : toggle.querySelector('i');
+                            if (body.classList.contains('dark-mode')) {
+                                if (icon) {
+                                    icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+                                }
+                                localStorage.setItem('theme', 'dark');
+                            } else {
+                                if (icon) {
+                                    icon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+                                }
+                                localStorage.setItem('theme', 'light');
+                            }
+                            // Reload the page
+                            window.location.reload();
+                        });
+                    });
+                } else {
+                    console.warn('Theme toggle button not found. Retrying...');
+                    // Retry after 500ms if element not found
+                    setTimeout(initializeThemeToggle, 500);
+                }
+            }
+
+            // Run initialization
+            document.addEventListener('DOMContentLoaded', initializeThemeToggle);
+        </script>
+
+        {% block js %}
         {% endblock %}
     </div>
-
 </body>
 
 </html>

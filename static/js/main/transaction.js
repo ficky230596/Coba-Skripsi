@@ -45,8 +45,11 @@ function cancelPayment(order_id) {
 }
 
 function addStatusLabel() {
-    $('.transaksi-unpaid').addClass('table-warning');
-    $('.transaksi-canceled, .transaksi-dibatalkan, .transaksi-dibatalkan-sendiri').addClass('table-danger');
+    $('.transaksi-unpaid').addClass('table-warning'); // Kuning untuk unpaid
+    $('.transaksi-canceled, .transaksi-dibatalkan, .transaksi-dibatalkan-sendiri').addClass('table-danger'); // Merah untuk canceled, dibatalkan, dibatalkan-sendiri
+    $('.transaksi-digunakan').addClass('table-info'); // Biru muda untuk digunakan
+    $('.transaksi-completed').addClass('table-secondary'); // Abu-abu untuk completed
+    $('.transaksi-sudah-bayar').addClass('table-success'); // Hijau untuk pembayaran (sudah bayar)
 }
 
 function alertAfter() {
