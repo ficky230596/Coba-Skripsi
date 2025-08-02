@@ -222,6 +222,7 @@ def send_fonnte_message(
 
 
 def cancel_unpaid_transactions():
+    logger.info("Memulai fungsi cancel_unpaid_transactions")  # Tambahkan log
     # Inisialisasi Snap dengan lingkungan dinamis
     is_production = MIDTRANS_ENV == "production"
     snap = midtransclient.Snap(
@@ -229,13 +230,14 @@ def cancel_unpaid_transactions():
         server_key=os.environ.get("MIDTRANS_SERVER_KEY"),
         client_key=os.environ.get("MIDTRANS_CLIENT_KEY"),
     )
+    wita = timezone('Asia/Makassar')  # Zona waktu WITA
     while True:
-        now = datetime.now()
+        now = datetime.now(wita)
         time_limit = now - timedelta(minutes=5)
         unpaid_transactions = db.transaction.find(
             {
                 "status": "unpaid",
-                "created_at": {"$lt": time_limit},
+                "created_at": {"$lt": time_limit.astimezone(timezone('UTC'))},  # Konversi ke UTC
             }
         )
         for txn in unpaid_transactions:
@@ -256,10 +258,11 @@ def cancel_unpaid_transactions():
                 snap.transactions.cancel(order_id)
                 logger.info(f"Transaksi {order_id} dibatalkan di Midtrans")
             except Exception as e:
-                logger.error(
-                    f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(e)}"
-                )
-                continue
+                if "404" in str(e):  # Tangani error 404
+                    logger.warning(f"Transaksi {order_id} tidak ditemukan di Midtrans, tetap batalkan di database")
+                else:
+                    logger.error(f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(e)}")
+                    continue  # Lewati transaksi ini, lanjutkan ke transaksi berikutnya
 
             # Hapus dari antrian prioritas
             with queue_lock:
@@ -287,7 +290,7 @@ def cancel_unpaid_transactions():
                 },
             )
             logger.info(
-                f"Transaksi {order_id} dibatalkan karena tidak dibayar dalam 10 menit."
+                f"Transaksi {order_id} dibatalkan karena tidak dibayar dalam 5 menit."
             )
         sleep(60)  # Interval 60 detik untuk mengurangi beban server
 
@@ -644,9 +647,10 @@ def create_transaction():
 
         # Jika transaksi ini dipilih, simpan ke database
         db.transaction.insert_one(transaksi)
+        # Di dalam /api/create_transaction, cari bagian ini:
         db.dataMobil.update_one(
             {"id_mobil": id_mobil},
-            {"$set": {"status_transaksi": "pembayaran", "status": "pembayaran"}},
+            {"$set": {"status_transaksi": "pembayaran", "status": "pembayaran", "order_id": order_id}},  # Tambahkan order_id
         )
 
         # Kembalikan transaksi lain ke antrian
@@ -671,6 +675,7 @@ def create_transaction():
 @api.route("/api/midtrans-notification", methods=["POST"])
 def midtrans_notification():
     notification = request.get_json()
+    logger.info(f"Menerima notifikasi Midtrans: {json.dumps(notification, indent=2)}")  # Tambahkan log
     order_id = notification.get("order_id")
     status_code = notification.get("status_code")
     gross_amount = notification.get("gross_amount")
