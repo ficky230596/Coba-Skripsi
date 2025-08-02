@@ -1225,11 +1225,11 @@ def page_not_found(e):
 app.register_blueprint(dashboard.dashboard)
 app.register_blueprint(api.api)
 
- 
-# if __name__ == '__main__':
-#     app.run(debug=True)
- 
- 
+from threading import Thread
+from api import cancel_unpaid_transactions
+
+# Mulai thread untuk pembatalan otomatis
+Thread(target=cancel_unpaid_transactions, daemon=True).start()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
