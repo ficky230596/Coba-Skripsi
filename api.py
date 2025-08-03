@@ -394,14 +394,14 @@ def create_transaction():
         logger.error(f"Data tidak lengkap: id_mobil={id_mobil}, user_id={user_id}")
         return jsonify({"status": "error", "message": "Data tidak lengkap."}), 400
 
-    valid_delivery_costs = [0,50000, 100000, 200000]
+    valid_delivery_costs = [0, 50000, 100000, 200000]
     if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
         logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
         return (
             jsonify(
                 {
                     "status": "error",
-                    "message": "Biaya pengantaran tidak valid. Harus 0, 100000, atau 200000.",
+                    "message": "Biaya pengantaran tidak valid. Harus 0, 50000, 100000, atau 200000.",
                 }
             ),
             400,
@@ -436,7 +436,11 @@ def create_transaction():
             404,
         )
 
-    # Cek status mobil
+    # Cek status mobil dan visibility
+    if data_mobil.get("visibility") == "hidden":
+        logger.error(f"Mobil tidak tersedia karena visibility hidden: id_mobil={id_mobil}")
+        return jsonify({"status": "error", "message": "Mobil sedang dalam perawatan."}), 409
+
     if data_mobil.get("status_transaksi") in ["pembayaran", "digunakan"]:
         logger.error(
             f"Mobil sudah digunakan atau dalam proses pembayaran: id_mobil={id_mobil}"
@@ -504,7 +508,8 @@ def create_transaction():
 
     # Buat order_id dan data transaksi
     order_id = str(uuid.uuid1())
-    now = datetime.now()
+    wita = timezone('Asia/Makassar')
+    now = datetime.now(wita)
     date_rent = now.strftime("%d-%B-%Y")
     end_rent = (now + timedelta(days=hari)).strftime("%d-%B-%Y")
 
@@ -544,7 +549,7 @@ def create_transaction():
             500,
         )
 
-    # Simpan transaksi ke database tanpa time_rent dan end_time
+    # Buat data transaksi
     transaksi = {
         "user_id": data_user["user_id"],
         "order_id": order_id,
@@ -560,9 +565,9 @@ def create_transaction():
         "total": total_harga,
         "lama_rental": f"{hari} hari",
         "date_rent": date_rent,
-        "time_rent": None,  # Tidak disimpan sampai konfirmasi
+        "time_rent": None,
         "end_rent": end_rent,
-        "end_time": None,  # Tidak disimpan sampai konfirmasi
+        "end_time": None,
         "status": "unpaid",
         "biaya_sopir": biaya_sopir,
         "gunakan_pengantaran": gunakan_pengantaran,
@@ -584,82 +589,137 @@ def create_transaction():
         f"Transaksi {order_id} ditambahkan ke antrian prioritas dengan total {total_harga}"
     )
 
-    # Delay 10 detik untuk memeriksa konflik
+    # Periksa antrian secara berkala selama 10 detik
     logger.info(
-        f"Menunggu 10 detik untuk memeriksa pesanan lain untuk id_mobil: {id_mobil}"
+        f"Memeriksa pesanan lain untuk id_mobil: {id_mobil} selama 10 detik"
     )
-    sleep(10)
+    from time import time
+    wait_time = 10  # Total waktu tunggu dalam detik
+    interval = 1    # Interval pemeriksaan dalam detik
+    start_time = time()
+    found_conflict = False
+    selected_transaction = transaksi
 
-    # Periksa konflik di antrian prioritas
+    while time() - start_time < wait_time:
+        with queue_lock:
+            conflicting_orders = []
+            temp_queue = PriorityQueue()
+            while not priority_queue.is_empty():
+                queued_transaction = priority_queue.pop()
+                if (
+                    queued_transaction["id_mobil"] == id_mobil
+                    and queued_transaction["order_id"] != order_id
+                    and queued_transaction["status"] in ["unpaid", "sudah bayar"]
+                ):
+                    conflicting_orders.append(queued_transaction)
+                else:
+                    temp_queue.push(queued_transaction)
+
+            # Jika ada transaksi lain, bandingkan total
+            for conflict in conflicting_orders:
+                found_conflict = True
+                if conflict["total"] > selected_transaction["total"]:
+                    selected_transaction = conflict
+
+            # Kembalikan transaksi ke antrian untuk pemeriksaan berikutnya
+            while not temp_queue.is_empty():
+                priority_queue.push(temp_queue.pop())
+            for conflict in conflicting_orders:
+                priority_queue.push(conflict)
+            priority_queue.push(transaksi)
+
+        # Jika tidak ada konflik pada pemeriksaan pertama, keluar lebih awal
+        if not found_conflict and time() - start_time >= 1:
+            logger.info(f"Tidak ada konflik untuk id_mobil {id_mobil}, lanjutkan pemrosesan")
+            break
+
+        sleep(interval)
+
+    # Proses transaksi setelah periode tunggu atau keluar lebih awal
     with queue_lock:
-        conflicting_orders = []
-        temp_queue = PriorityQueue()
-        selected_transaction = transaksi
-
-        while not priority_queue.is_empty():
-            queued_transaction = priority_queue.pop()
-            if (
-                queued_transaction["id_mobil"] == id_mobil
-                and queued_transaction["order_id"] != order_id
-                and queued_transaction["status"] in ["unpaid", "sudah bayar"]
-            ):
-                conflicting_orders.append(queued_transaction)
-            else:
-                temp_queue.push(queued_transaction)
-
-        for conflict in conflicting_orders:
-            if conflict["total"] > selected_transaction["total"]:
-                selected_transaction = conflict
-                if selected_transaction["order_id"] != order_id:
-                    # Batalkan transaksi saat ini
-                    try:
-                        snap.transactions.cancel(order_id)
-                        logger.info(
-                            f"Transaksi {order_id} dibatalkan di Midtrans karena konflik"
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(e)}"
-                        )
-                    db.transaction.delete_one({"order_id": order_id})
-                    db.dataMobil.update_one(
-                        {"id_mobil": id_mobil},
-                        {"$set": {"status_transaksi": None, "status": "Tersedia"}},
-                    )
-                    # Kembalikan transaksi lain ke antrian
-                    while not temp_queue.is_empty():
-                        priority_queue.push(temp_queue.pop())
-                    for conflict in conflicting_orders:
-                        if conflict["order_id"] != selected_transaction["order_id"]:
-                            priority_queue.push(conflict)
-                    logger.info(
-                        f"Transaksi {order_id} dibatalkan karena ada transaksi lain dengan nilai lebih tinggi"
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "message": f"Mohon maaf mobil tidak tersedia lagi {id_mobil}",
-                            }
-                        ),
-                        409,
-                    )
+        if selected_transaction["order_id"] != order_id:
+            # Batalkan transaksi saat ini
+            try:
+                snap.transactions.cancel(order_id)
+                logger.info(f"Transaksi {order_id} dibatalkan di Midtrans karena konflik")
+            except Exception as e:
+                if "404" in str(e):
+                    logger.warning(f"Transaksi {order_id} tidak ditemukan di Midtrans, tetap lanjutkan pembatalan")
+                else:
+                    logger.error(f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(e)}")
+            db.transaction.delete_one({"order_id": order_id})
+            db.dataMobil.update_one(
+                {"id_mobil": id_mobil},
+                {"$set": {"status_transaksi": None, "status": "Tersedia", "order_id": None}},
+            )
+            # Kembalikan transaksi lain ke antrian
+            temp_queue = PriorityQueue()
+            while not priority_queue.is_empty():
+                queued_transaction = priority_queue.pop()
+                if queued_transaction["order_id"] != order_id:
+                    temp_queue.push(queued_transaction)
+            while not temp_queue.is_empty():
+                priority_queue.push(temp_queue.pop())
+            logger.info(
+                f"Transaksi {order_id} dibatalkan karena ada transaksi lain dengan nilai lebih tinggi"
+            )
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Mohon maaf mobil tidak tersedia lagi {id_mobil}",
+                    }
+                ),
+                409,
+            )
 
         # Jika transaksi ini dipilih, simpan ke database
-        db.transaction.insert_one(transaksi)
-        # Di dalam /api/create_transaction, cari bagian ini:
-        db.dataMobil.update_one(
-            {"id_mobil": id_mobil},
-            {"$set": {"status_transaksi": "pembayaran", "status": "pembayaran", "order_id": order_id}},  # Tambahkan order_id
-        )
+        try:
+            with db.client.start_session() as session:
+                with session.start_transaction():
+                    db.transaction.insert_one(transaksi, session=session)
+                    db.dataMobil.update_one(
+                        {"id_mobil": id_mobil},
+                        {
+                            "$set": {
+                                "status_transaksi": "pembayaran",
+                                "status": "pembayaran",
+                                "order_id": order_id
+                            }
+                        },
+                        session=session
+                    )
+        except Exception as e:
+            logger.error(f"Gagal menyimpan transaksi {order_id} ke database: {str(e)}")
+            try:
+                snap.transactions.cancel(order_id)
+                logger.info(f"Transaksi {order_id} dibatalkan di Midtrans karena gagal menyimpan")
+            except Exception as cancel_error:
+                if "404" in str(e):
+                    logger.warning(f"Transaksi {order_id} tidak ditemukan di Midtrans, tetap lanjutkan pembatalan")
+                else:
+                    logger.error(f"Gagal membatalkan transaksi {order_id} di Midtrans: {str(cancel_error)}")
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Gagal menyimpan transaksi.",
+                        "detail": str(e),
+                    }
+                ),
+                500,
+            )
 
-        # Kembalikan transaksi lain ke antrian
+        # Hapus transaksi dari antrian
+        temp_queue = PriorityQueue()
+        while not priority_queue.is_empty():
+            queued_transaction = priority_queue.pop()
+            if queued_transaction["order_id"] != order_id:
+                temp_queue.push(queued_transaction)
         while not temp_queue.is_empty():
             priority_queue.push(temp_queue.pop())
-        for conflict in conflicting_orders:
-            if conflict["order_id"] != selected_transaction["order_id"]:
-                priority_queue.push(conflict)
 
+    logger.info(f"Transaksi {order_id} berhasil disimpan dengan total {total_harga}")
     return (
         jsonify(
             {
@@ -1192,6 +1252,21 @@ def reg():
         return jsonify(
             {"result": "ejectedPhone", "msg": "Nomor telepon tidak boleh kosong"}
         )
+
+    # Normalisasi nomor telepon: hapus spasi dan tanda "+"
+    normalized_phone = phone.replace(" ", "").replace("+", "")
+    # Validasi format nomor telepon (opsional, untuk memastikan hanya angka)
+    if not normalized_phone.isdigit() or len(normalized_phone) < 10 or len(normalized_phone) > 13:
+        return jsonify({"result": "ejectedPhone", "msg": "Nomor telepon tidak valid"})
+
+    # Pengecekan apakah nomor telepon sudah digunakan (dengan normalisasi)
+    # Cari semua nomor telepon di database dan normalisasi untuk perbandingan
+    existing_users = db.users.find({"phone": {"$exists": True}})
+    for user in existing_users:
+        db_phone = user["phone"].replace(" ", "").replace("+", "")
+        if db_phone == normalized_phone:
+            return jsonify({"result": "ejectedPhone", "msg": "Nomor telepon sudah digunakan"})
+
     if not name:
         return jsonify(
             {"result": "ejectedName", "msg": "Nama lengkap tidak boleh kosong"}
@@ -1225,13 +1300,13 @@ def reg():
     # Hash password menggunakan hashlib.sha256
     pw_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-    # Simpan data pengguna ke database
+    # Simpan data pengguna ke database dengan nomor telepon yang dinormalisasi
     db.users.insert_one(
         {
             "user_id": user_id,
             "username": username,
             "email": email,
-            "phone": phone,
+            "phone": normalized_phone,  # Simpan nomor telepon tanpa spasi
             "name": name,
             "password": pw_hash,
             "image_path": file_path,

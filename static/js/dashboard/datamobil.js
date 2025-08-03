@@ -4,6 +4,20 @@ $(document).ready(function () {
   addStatusLabel();
   changeCurrency();
 
+  // Cek apakah ada pesan toastr di localStorage saat halaman dimuat
+  const toastrMessage = localStorage.getItem('toastrMessage');
+  if (toastrMessage) {
+    try {
+      const { type, text } = JSON.parse(toastrMessage);
+      console.log('Menampilkan toastr:', { type, text }); // Debugging
+      toastr[type](text);
+      localStorage.removeItem('toastrMessage');
+    } catch (e) {
+      console.error('Gagal parsing toastrMessage:', e);
+      localStorage.removeItem('toastrMessage');
+    }
+  }
+
   $("#search-data").keyup(function () {
     var search = $(this).val();
     $.ajax({
@@ -14,7 +28,7 @@ $(document).ready(function () {
         $("#list-data").empty();
         var temp = "";
         if (data.length === 0) {
-          temp = "<tr><td colspan='11' class='text-center'>No Data</td></tr>"; // Ubah colspan ke 11
+          temp = "<tr><td colspan='11' class='text-center'>No Data</td></tr>";
           $("#list-data").append(temp);
         } else {
           for (let i = 0; i < data.length; i++) {
@@ -74,7 +88,10 @@ $(document).ready(function () {
         changeCurrency();
       },
       error: function (xhr, status, error) {
-        toastr.error("Gagal melakukan pencarian. Silakan coba lagi.");
+        const errorMessage = xhr.responseJSON && xhr.responseJSON.msg
+          ? xhr.responseJSON.msg
+          : "Gagal melakukan pencarian. Silakan coba lagi.";
+        toastr.error(errorMessage);
       }
     });
   });
@@ -85,14 +102,20 @@ export function confirm(fitur, id_mobil, order_id = null) {
     pesanan: {
       text: "Pastikan client sudah datang dan menyerahkan KTP ke kantor. Yakin untuk konfirmasi pesanan?",
       url: "/api/confirmPesanan",
+      successMessage: "Pesanan berhasil dikonfirmasi!",
+      errorMessage: "Gagal mengkonfirmasi pesanan. Silakan coba lagi.",
     },
     kembali: {
       text: "Pastikan client sudah mengembalikan mobil, yakin untuk merubah status?",
       url: "/api/confirmKembali",
+      successMessage: "Pengembalian dikonfirmasi. User akan memberikan rating.",
+      errorMessage: "Gagal mengkonfirmasi pengembalian. Silakan coba lagi.",
     },
     hapus: {
       text: "Yakin untuk menghapus mobil?",
       url: "/api/delete_mobil",
+      successMessage: "Mobil berhasil dihapus!",
+      errorMessage: "Gagal menghapus mobil. Silakan coba lagi.",
     },
   };
 
@@ -116,8 +139,12 @@ export function confirm(fitur, id_mobil, order_id = null) {
         data: data,
         success: function (response) {
           if (response['result'] === 'unsuccess') {
-            toastr.warning(response['msg']);
+            toastr.warning(response['msg'] || 'Terjadi kesalahan pada server.');
           } else {
+            localStorage.setItem('toastrMessage', JSON.stringify({
+              type: 'success',
+              text: response['msg'] || doc[fitur].successMessage,
+            }));
             if (fitur === 'kembali') {
               $.ajax({
                 type: "POST",
@@ -125,24 +152,32 @@ export function confirm(fitur, id_mobil, order_id = null) {
                 data: { id_mobil: id_mobil },
                 success: function (response) {
                   if (response['result'] === 'success') {
-                    toastr.success("Pengembalian dikonfirmasi. User akan memberikan rating.");
-                    location.reload();
+                    localStorage.setItem('toastrMessage', JSON.stringify({
+                      type: 'success',
+                      text: response['msg'] || doc[fitur].successMessage,
+                    }));
+                    setTimeout(() => location.reload(), 100);
                   } else {
-                    toastr.warning(response['msg']);
+                    toastr.warning(response['msg'] || 'Terjadi kesalahan pada server.');
                   }
                 },
                 error: function (xhr, status, error) {
-                  toastr.error("Gagal menyembunyikan mobil.");
+                  const errorMessage = xhr.responseJSON && xhr.responseJSON.msg
+                    ? xhr.responseJSON.msg
+                    : "Gagal menyembunyikan mobil. Silakan coba lagi.";
+                  toastr.error(errorMessage);
                 }
               });
             } else {
-              toastr.success("Berhasil di Konfirmasi!");
-              location.reload();
+              setTimeout(() => location.reload(), 100);
             }
           }
         },
         error: function (xhr, status, error) {
-          toastr.error("Terjadi kesalahan. Silakan coba lagi.");
+          const errorMessage = xhr.responseJSON && xhr.responseJSON.msg
+            ? xhr.responseJSON.msg
+            : doc[fitur].errorMessage;
+          toastr.error(errorMessage);
         }
       });
     }
@@ -152,6 +187,9 @@ window.confirm = confirm;
 
 export function toggleVisibility(action, id_mobil) {
   let url = action === 'hide' ? '/api/hide_mobil' : '/api/show_mobil';
+  let errorMessage = action === 'hide'
+    ? 'Gagal menyembunyikan mobil. Silakan coba lagi.'
+    : 'Gagal menampilkan mobil. Silakan coba lagi.';
 
   Swal.fire({
     position: "top",
@@ -169,13 +207,20 @@ export function toggleVisibility(action, id_mobil) {
         data: { id_mobil: id_mobil },
         success: function (response) {
           if (response['result'] === 'unsuccess') {
-            toastr.warning(response['msg']);
+            toastr.warning(response['msg'] || 'Terjadi kesalahan pada server.');
           } else {
-            location.reload();
+            localStorage.setItem('toastrMessage', JSON.stringify({
+              type: 'success',
+              text: response['msg'] || (action === 'hide' ? 'Mobil berhasil disembunyikan!' : 'Mobil berhasil ditampilkan!'),
+            }));
+            setTimeout(() => location.reload(), 100);
           }
         },
         error: function (xhr, status, error) {
-          toastr.error("Terjadi kesalahan. Silakan coba lagi.");
+          const errorMessage = xhr.responseJSON && xhr.responseJSON.msg
+            ? xhr.responseJSON.msg
+            : errorMessage;
+          toastr.error(errorMessage);
         }
       });
     }

@@ -1,8 +1,9 @@
 #app.py
-from flask import Flask,render_template,request,jsonify, redirect,url_for,flash
+from flask import Flask,render_template,request,jsonify, redirect,url_for,flash, current_app
 import dashboard
 import api
 from dbconnection import db, ensure_indexes
+# from flask import jsonify, request, current_app
 from bson import ObjectId
 import jwt
 import os
@@ -649,23 +650,65 @@ def maps():
         return redirect(url_for('home'))
 
 
-
-
 @app.route('/api/hide_mobil', methods=['POST'])
 def hide_mobil():
     id_mobil = request.form.get('id_mobil')
     if not id_mobil:
-        return jsonify({'result': 'unsuccess', 'msg': 'ID mobil tidak ditemukan'})
+        current_app.logger.error('ID mobil tidak ditemukan di request /api/hide_mobil')
+        return jsonify({'result': 'unsuccess', 'msg': 'ID mobil tidak ditemukan'}), 400
+    
+    # Ambil data mobil dari database
+    data_mobil = db.dataMobil.find_one({'id_mobil': id_mobil})
+    if not data_mobil:
+        current_app.logger.error(f'Mobil tidak ditemukan: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil tidak ditemukan'}), 404
+    
+    # Cek status mobil
+    current_status = data_mobil.get('status')
+    if current_status == 'Diproses':
+        current_app.logger.error(f'Tidak dapat menyembunyikan mobil karena sedang diproses: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang dalam proses pemesanan dan tidak dapat disembunyikan'}), 409
+    if current_status == 'Digunakan':
+        current_app.logger.error(f'Tidak dapat menyembunyikan mobil karena sedang digunakan: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang digunakan oleh pelanggan dan tidak dapat disembunyikan'}), 409
+    if current_status == 'pembayaran':
+        current_app.logger.error(f'Tidak dapat menyembunyikan mobil karena sedang menunggu pembayaran: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang menunggu pembayaran dan tidak dapat disembunyikan'}), 409
+    
+    # Update visibility ke "hidden"
     db.dataMobil.update_one({'id_mobil': id_mobil}, {'$set': {'visibility': 'hidden'}})
-    return jsonify({'result': 'success'})
+    current_app.logger.info(f'Mobil berhasil disembunyikan: id_mobil={id_mobil}')
+    return jsonify({'result': 'success', 'msg': 'Mobil berhasil disembunyikan'}), 200
 
 @app.route('/api/show_mobil', methods=['POST'])
 def show_mobil():
     id_mobil = request.form.get('id_mobil')
     if not id_mobil:
-        return jsonify({'result': 'unsuccess', 'msg': 'ID mobil tidak ditemukan'})
+        current_app.logger.error('ID mobil tidak ditemukan di request /api/show_mobil')
+        return jsonify({'result': 'unsuccess', 'msg': 'ID mobil tidak ditemukan'}), 400
+    
+    # Ambil data mobil dari database
+    data_mobil = db.dataMobil.find_one({'id_mobil': id_mobil})
+    if not data_mobil:
+        current_app.logger.error(f'Mobil tidak ditemukan: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil tidak ditemukan'}), 404
+    
+    # Cek status mobil
+    current_status = data_mobil.get('status')
+    if current_status == 'Diproses':
+        current_app.logger.error(f'Tidak dapat menampilkan mobil karena sedang diproses: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang dalam proses pemesanan dan tidak dapat ditampilkan'}), 409
+    if current_status == 'Digunakan':
+        current_app.logger.error(f'Tidak dapat menampilkan mobil karena sedang digunakan: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang digunakan oleh pelanggan dan tidak dapat ditampilkan'}), 409
+    if current_status == 'pembayaran':
+        current_app.logger.error(f'Tidak dapat menampilkan mobil karena sedang menunggu pembayaran: id_mobil={id_mobil}')
+        return jsonify({'result': 'unsuccess', 'msg': 'Mobil sedang menunggu pembayaran dan tidak dapat ditampilkan'}), 409
+    
+    # Update visibility ke "visible"
     db.dataMobil.update_one({'id_mobil': id_mobil}, {'$set': {'visibility': 'visible'}})
-    return jsonify({'result': 'success'})
+    current_app.logger.info(f'Mobil berhasil ditampilkan: id_mobil={id_mobil}')
+    return jsonify({'result': 'success', 'msg': 'Mobil berhasil ditampilkan'}), 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

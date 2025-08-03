@@ -374,18 +374,21 @@ function createTransaction(id_mobil, user_id) {
                 toastr.warning(response.message, 'Peringatan', {
                     onHidden: function () {
                         $('#btn_pesan').attr('disabled', false);
+                        window.location.href = '/'; // Alihkan ke "/"
                     }
                 });
             } else if (response.status === "active_rental") {
                 toastr.warning(response.message, 'Peringatan', {
                     onHidden: function () {
                         $('#btn_pesan').attr('disabled', false);
+                        window.location.href = '/'; // Alihkan ke "/"
                     }
                 });
             } else if (response.status === "error") {
                 toastr.error(response.message, 'Error', {
                     onHidden: function () {
                         $('#btn_pesan').attr('disabled', false);
+                        window.location.href = '/'; // Alihkan ke "/"
                     }
                 });
             }
@@ -403,6 +406,7 @@ function createTransaction(id_mobil, user_id) {
             toastr.error(errorMsg, 'Error', {
                 onHidden: function () {
                     $('#btn_pesan').attr('disabled', false);
+                    window.location.href = '/'; // Alihkan ke "/"
                 }
             });
         }
