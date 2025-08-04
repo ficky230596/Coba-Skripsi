@@ -139,3 +139,163 @@ $(document).ready(function () {
     // Urutkan tabel saat halaman dimuat
     sortTableByDate();
 });
+
+$(document).ready(function () {
+    // Format currency untuk elemen dengan data-target="currency"
+    function formatCurrency() {
+        $('[data-target="currency"]').each(function () {
+            const value = parseFloat($(this).data('original-value') || $(this).text());
+            if (!isNaN(value)) {
+                $(this).text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value));
+            } else {
+                console.warn('Invalid currency value:', $(this).text());
+                $(this).text('Tidak Valid');
+            }
+        });
+    }
+
+    // Panggil formatCurrency saat halaman dimuat
+    formatCurrency();
+
+    // Handler untuk tombol Batalkan
+    $(document).on('click', '.cancel-button', function () {
+        const orderId = $(this).data('order-id');
+        const $button = $(this);
+        const $loadingIcon = $button.find('.loading-icon');
+        const $span = $button.find('span');
+
+        if (confirm('Apakah Anda yakin ingin membatalkan transaksi ini?')) {
+            $loadingIcon.removeClass('d-none');
+            $span.text('Membatalkan...');
+            $button.prop('disabled', true);
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/cancel_transaction',
+                data: JSON.stringify({ order_id: orderId }),
+                contentType: 'application/json',
+                success: function (response) {
+                    if (response.result === 'success') {
+                        alert('Transaksi berhasil dibatalkan');
+                        location.reload();
+                    } else {
+                        alert(response.msg || 'Gagal membatalkan transaksi');
+                        $loadingIcon.addClass('d-none');
+                        $span.text('Batalkan');
+                        $button.prop('disabled', false);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error cancelling transaction:', status, error, xhr.responseText);
+                    alert('Gagal membatalkan transaksi');
+                    $loadingIcon.addClass('d-none');
+                    $span.text('Batalkan');
+                    $button.prop('disabled', false);
+                }
+            });
+        }
+    });
+
+    // Handler untuk tombol Download PDF
+    $(document).on('click', '.download-pdf-button', function () {
+        const id = $(this).data('id');
+        const orderId = $(this).data('order-id');
+        const modalBody = $(`#modal-${id} .modal-body`);
+
+        if (!modalBody.length) {
+            console.error(`Modal body untuk ID modal-${id} tidak ditemukan`);
+            alert('Gagal menghasilkan PDF: Detail transaksi tidak ditemukan.');
+            return;
+        }
+
+        // Ambil data dari modal
+        const data = {};
+        modalBody.find('li').each(function () {
+            const label = $(this).find('.label').text().trim();
+            const value = $(this).find('.value').text().trim();
+            data[label] = value;
+        });
+
+        // Perbaiki pemrosesan Total
+        if (data['Total']) {
+            const totalElement = modalBody.find('.value[data-target="currency"]');
+            let totalValue = parseFloat(totalElement.data('original-value'));
+            if (isNaN(totalValue)) {
+                totalValue = parseFloat(totalElement.text().replace(/[^\d]/g, '')) || 0;
+            }
+            console.log('Raw Total Value:', totalValue); // Debugging
+            if (!isNaN(totalValue)) {
+                data['Total'] = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalValue);
+            } else {
+                data['Total'] = 'Tidak Valid';
+                console.error('Total value is invalid:', totalElement.text());
+            }
+        }
+
+        // Template PDF dengan tampilan rapi dan fallback untuk logo
+        const logoSrc = '/static/gambar/login3.png';
+        const pdfTemplate = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; width: 180mm; color: #333;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 24px; margin: 0; color: #1a73e8;">Invoice Transaksi</h1>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Tanggal:</strong> ${new Date().toLocaleDateString('id-ID')}</p>
+                    </div>
+                    <img src="${logoSrc}" style="width: 80px; height: auto;" alt="Logo" onerror="this.style.display='none';">
+                </div>
+                <hr style="border: 1px solid #1a73e8; margin: 10px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tbody>
+                        ${Object.entries(data).map(([label, value]) => `
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold; width: 30%; border-bottom: 1px solid #ddd;">${label}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${value}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; font-size: 12px; color: #666; text-align: center;">
+                    <p>Terima kasih atas transaksi Anda!</p>
+                    <p>Rental Rental Mobil Manado - Jl. Manado No. 123, Manado, Indonesia</p>
+                    <p>Email: contact @fickyrahanubun@gmail.com.com | Telepon: (021) 123-4567</p>
+                </div>
+            </div>
+        `;
+
+        // Buat elemen sementara untuk render PDF
+        const tempDiv = $('<div>').html(pdfTemplate).css({
+            position: 'absolute',
+            left: '-9999px',
+            width: '180mm'
+        }).appendTo('body');
+
+        // Gunakan html2canvas untuk render template
+        html2canvas(tempDiv[0], {
+            scale: 2,
+            useCORS: true
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            // Tambahkan halaman tambahan jika konten terlalu panjang
+            if (pdfHeight > pdf.internal.pageSize.getHeight() - 20) {
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
+            } else {
+                pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
+            }
+
+            pdf.save(`invoice_${orderId}.pdf`);
+            tempDiv.remove();
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            alert('Gagal menghasilkan PDF. Silakan coba lagi.');
+            tempDiv.remove();
+        });
+    });
+});

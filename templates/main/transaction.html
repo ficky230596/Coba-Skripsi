@@ -2,19 +2,33 @@
 {% block title %}| Transaksi{% endblock %}
 
 {% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="{{ url_for('static', filename='js/main/transaction.js') }}"></script>
 {% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main/transaksi.css') }}">
+<style>
+    .modal-body ul li {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
 
+    .modal-body .label {
+        font-weight: bold;
+        width: 150px;
+    }
+
+    .modal-body .value {
+        flex: 1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <section class="transaction-section">
     <div id="payment-alert" class="alert alert-danger d-none" role="alert"></div>
-
-    <!-- Kontainer tabel -->
     <div class="table-responsive">
         <table class="table table-bordered table-hover">
             <thead class="table-primary">
@@ -36,12 +50,11 @@
                     <td data-label="Tipe Mobil">{{ dt.type_mobil }}</td>
                     <td data-label="Bahan Bakar">{{ dt.bahan_bakar }}</td>
                     <td data-label="Lama Sewa">{{ dt.lama_rental }}</td>
-                    <td data-label="Total" data-target="currency">{{ dt.total }}</td>
+                    <td data-label="Total" data-target="currency" data-original-value="{{ dt.total }}">{{ dt.total }}
+                    </td>
                 </tr>
-
-                <!-- Modal Detail Transaksi -->
                 <div class="modal fade" id="modal-{{dt._id}}" data-bs-backdrop="static" data-bs-keyboard="false"
-                    tabindex="-1" aria-labelledby="staticBackdropLabel-{{dt._id}}" aria-hidden="true">
+                    tabindex="-1" aria-labelledby="staticBackdropLabel-{{dt._id}}" aria-hidden="false">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -51,6 +64,10 @@
                             </div>
                             <div id="rental-modal" class="modal-body">
                                 <ul class="list-unstyled">
+                                    <li class="d-flex align-items-center mb-3">
+                                        <span class="label">Order ID</span>
+                                        <span class="value">{{ dt.order_id }}</span>
+                                    </li>
                                     <li class="d-flex align-items-center mb-3">
                                         <span class="label">Merek</span>
                                         <span class="value">{{ dt.item }} {{ dt.transmisi }} {{ dt.plat }}</span>
@@ -71,9 +88,10 @@
                                         <span class="label">Tanggal Kembali</span>
                                         <span class="value">
                                             {% if dt.status == 'canceled' %}
-                                            -  <!-- Tampilkan kosong untuk transaksi yang dibatalkan -->
+                                            -
                                             {% elif dt.actual_return_date %}
-                                            {{ dt.actual_return_date }} {{ dt.actual_return_time }} {{ dt.status_pengembalian | default('') }}
+                                            {{ dt.actual_return_date }} {{ dt.actual_return_time }} {{
+                                            dt.status_pengembalian | default('') }}
                                             {% else %}
                                             Belum dikembalikan
                                             {% endif %}
@@ -99,7 +117,8 @@
                                     </li>
                                     <li class="d-flex align-items-center mb-3">
                                         <span class="label">Total</span>
-                                        <span class="value" data-target="currency">{{ dt.total }}</span>
+                                        <span class="value" data-target="currency"
+                                            data-original-value="{{ dt.total }}">{{ dt.total }}</span>
                                     </li>
                                     <li class="d-flex align-items-center mb-3">
                                         <span class="label">Status</span>
@@ -113,9 +132,8 @@
                                     {% endif %}
                                 </ul>
                             </div>
-
-                            {% if dt.status == 'unpaid' %}
                             <div class="modal-footer">
+                                {% if dt.status == 'unpaid' %}
                                 <a href="/transaksi/{{ dt.order_id }}" class="btn btn-primary">Bayar</a>
                                 <button type="button" class="btn btn-danger cancel-button"
                                     data-order-id="{{ dt.order_id }}">
@@ -123,8 +141,10 @@
                                         class="loading-icon d-none">
                                     <span>Batalkan</span>
                                 </button>
+                                {% endif %}
+                                <button type="button" class="btn btn-success download-pdf-button" data-id="{{ dt._id }}"
+                                    data-order-id="{{ dt.order_id }}">Download PDF</button>
                             </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
