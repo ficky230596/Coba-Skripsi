@@ -422,3 +422,43 @@
   .sidebar-hidden .table_data .table tr > *:nth-child(11) { min-width: 70px; }
   .sidebar-hidden .table_data .table tr > *:nth-child(12) { min-width: 70px; }
 }
+
+/* Gaya untuk badge status */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+.status-badge-Digunakan {
+    background-color: #fcc706; /* Hijau untuk Digunakan */
+    color: white;
+}
+
+.status-badge-completed {
+    background-color: #36e90e; /* Abu-abu untuk Selesai */
+    color: white;
+}
+
+.status-badge-Sudah-Bayar {
+    background-color: #007bff; /* Biru untuk Sudah Bayar */
+    color: white;
+}
+
+.status-badge-Dibatalkan {
+    background-color: #dc3545; /* Merah untuk Dibatalkan */
+    color: white;
+}
+
+.status-badge-canceled {
+    background-color: #dc3545; /* Merah, sama seperti Dibatalkan */
+    color: white;
+}
+
+.status-badge-default {
+    background-color: #6c757d; /* Abu-abu sebagai default */
+    color: white;
+}

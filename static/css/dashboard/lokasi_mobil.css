@@ -1,0 +1,311 @@
+/* lokasi_mobil.css */
+
+/* Kontainer utama */
+
+.container-fluid.data {
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    /* Isolasi dari sidebar */
+}
+
+/* Kontainer peta */
+.map-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Peta */
+#map {
+    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* Kartu */
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 19px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    margin-left: 20px;
+}
+
+#card_gambar {
+
+    background-image: url(../../icon/logo3.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* gambar isi penuh sesuai card */
+    background-position: center;
+    /* posisikan gambar di tengah */
+
+}
+
+#pilih_mobil {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #ffffff;
+    -webkit-text-stroke: 1px black;
+    /* outline hitam */
+
+}
+
+#temukan_mobil {
+    font-weight: bold;
+    color: rgb(247, 247, 247);
+    /* isi huruf */
+    -webkit-text-stroke: 1px black;
+    /* garis luar */
+}
+
+
+/* Body kartu */
+.card-body {
+    padding: 15px;
+}
+
+/* Label formulir */
+.form-label {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* Dropdown Pilih Mobil */
+#mobil-select {
+    width: 100%;
+}
+
+/* Tombol Temukan Mobil */
+#find-mobil-btn {
+    width: 100%;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Gaya untuk status badge */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+    display: inline-block;
+}
+
+.status-badge-Digunakan {
+    background-color: #28a745;
+}
+
+.status-badge-tersedia {
+    background-color: #007bff;
+}
+
+.status-badge-tidak-tersedia {
+    background-color: #dc3545;
+}
+
+/* Gaya untuk gambar yang dapat diklik */
+.img-clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.img-clickable:hover {
+    transform: scale(1.05);
+}
+
+/* Modal untuk detail transaksi */
+#transactionDetailModal .modal-content {
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#transactionDetailModal .modal-header {
+    border-bottom: 1px solid #e9ecef;
+}
+
+#transactionDetailModal .modal-body {
+    padding: 15px;
+}
+
+#transactionDetailModal .card {
+    margin-bottom: 15px;
+}
+
+#modal-status {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Modal untuk memperbesar gambar */
+#imageZoomModal .modal-content {
+    border-radius: 8px;
+}
+
+#imageZoomModal .modal-body {
+    padding: 0;
+}
+
+#imageZoomModal img {
+    max-height: 80vh;
+    object-fit: contain;
+}
+
+/* Gaya untuk Toastr */
+.toast-custom {
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.toast-success {
+    background-color: #28a745 !important;
+    color: #fff !important;
+}
+
+.toast-error {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+.toast-info {
+    background-color: #007bff !important;
+    color: #fff !important;
+}
+
+/* Tata letak untuk desktop */
+@media (min-width: 769px) {
+    body {
+        overflow: hidden;
+    }
+
+    .container-fluid.data {
+        padding: 0;
+        margin: 0;
+        height: calc(100vh - 60px);
+        /* Sesuaikan dengan tinggi header */
+        position: relative;
+        /* Isolasi dari sidebar */
+    }
+
+    .row.g-0 {
+        height: 100%;
+        margin: 0;
+    }
+
+    .map-container {
+        height: 550px;
+        /* Tinggi peta yang sudah dikecilkan */
+        width: 100%;
+    }
+
+    #map {
+        height: 100%;
+        width: 100%;
+    }
+
+    .card {
+        height: auto;
+        /* Kartu hanya mengambil ruang konten */
+        max-height: calc(100vh - 60px);
+        /* Batasi agar tidak melebihi viewport */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-right: 15px;
+        /* Jarak antara kartu dan peta */
+    }
+
+    .card-body {
+        width: 100%;
+    }
+
+    /* Pastikan sidebar tidak memengaruhi konten utama */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 250px;
+        /* Sesuaikan dengan lebar sidebar */
+        z-index: 1000;
+    }
+
+    .main-content {
+        margin-left: 250px;
+        /* Sesuaikan dengan lebar sidebar */
+    }
+}
+
+/* Tata letak untuk mobile */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+
+    .container-fluid.data {
+        height: auto;
+    }
+
+    .map-container {
+        padding: 10px;
+        margin-top: 10px;
+        height: 400px;
+    }
+
+    #map {
+        height: 100%;
+        width: 100%;
+    }
+
+    .card {
+        margin-bottom: 10px;
+        height: auto;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+
+    #mobil-select {
+        max-width: 100%;
+    }
+
+    #find-mobil-btn {
+        min-width: 100%;
+    }
+
+    #transactionDetailModal .modal-body {
+        padding: 10px;
+    }
+
+    #transactionDetailModal .card {
+        padding: 10px;
+    }
+
+    /* Sidebar pada mobile (offcanvas) */
+    .main-content {
+        margin-left: 0;
+        /* Tidak ada margin pada mobile */
+    }
+}
+
+@media (max-width: 576px) {
+    .map-container {
+        height: 300px;
+    }
+
+    .leaflet-popup-content-wrapper {
+        max-width: 200px;
+    }
+}

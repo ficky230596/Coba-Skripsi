@@ -18,13 +18,13 @@ $(document).ready(function () {
 
       console.log(`Processing countdown for order_id: ${orderId}, end_rent: ${endRent}, end_time: ${endTime}, status: ${statusMobil}, return_status: ${returnStatus}, actual_return_date: ${actualReturnDate}, actual_return_time: ${actualReturnTime}`);
 
-      if (statusMobil === 'digunakan') {
-        if (!endRent || !endTime) {
-          console.warn(`Data end_rent atau end_time kosong untuk order_id: ${orderId}`);
-          $this.text('-');
-          return;
-        }
+      if (!orderId || !endRent || !endTime) {
+        console.warn(`Data order_id, end_rent, atau end_time kosong untuk order_id: ${orderId || 'unknown'}`);
+        $this.text('-');
+        return;
+      }
 
+      if (statusMobil === 'Digunakan') {
         const endDateTimeStr = `${endRent} ${endTime}`;
         const endDateTime = new Date(endDateTimeStr.replace(/-/, ' '));
 
@@ -46,7 +46,7 @@ $(document).ready(function () {
           const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
           $this.text(`${days}h ${hours}j ${minutes}m ${seconds}d`);
         }
-      } else if (statusMobil === 'selesai' && actualReturnDate && actualReturnTime && returnStatus) {
+      } else if (statusMobil === 'Selesai' && actualReturnDate && actualReturnTime && returnStatus) {
         const endDateTimeStr = `${endRent} ${endTime}`;
         const endDateTime = new Date(endDateTimeStr.replace(/-/, ' '));
         const actualReturnDateTimeStr = `${actualReturnDate} ${actualReturnTime}`;
@@ -79,144 +79,80 @@ $(document).ready(function () {
         $this.text('-');
       }
     });
-
-    // Perbarui countdown di modal
-    const $modalCountdown = $('#modal-countdown');
-    if ($modalCountdown.length && $('#transactionDetailModal').hasClass('show')) {
-      const endRent = $('#modal-end-rent').text();
-      const endTime = $('#modal-end-rent').data('end-time') || '';
-      const statusMobil = $('#modal-status').text();
-      const returnStatus = $('#modal-countdown').data('return-status') || '';
-      const actualReturnDate = $('#modal-countdown').data('actual-return-date') || '';
-      const actualReturnTime = $('#modal-countdown').data('actual-return-time') || '';
-
-      console.log(`Processing modal countdown, end_rent: ${endRent}, end_time: ${endTime}, status: ${statusMobil}, return_status: ${returnStatus}, actual_return_date: ${actualReturnDate}, actual_return_time: ${actualReturnTime}`);
-
-      if (statusMobil === 'digunakan') {
-        if (!endRent || !endTime) {
-          console.warn(`Data end_rent atau end_time kosong untuk modal`);
-          $modalCountdown.text('-');
-          return;
-        }
-
-        const endDateTimeStr = `${endRent} ${endTime}`;
-        const endDateTime = new Date(endDateTimeStr.replace(/-/, ' '));
-
-        if (isNaN(endDateTime)) {
-          console.error(`Tanggal tidak valid untuk modal, endDateTimeStr: ${endDateTimeStr}`);
-          $modalCountdown.text('Tanggal tidak valid');
-          return;
-        }
-
-        const now = new Date();
-        const timeDiff = endDateTime - now;
-
-        if (timeDiff <= 0) {
-          $modalCountdown.html('<span class="text-danger">Terlambat</span>');
-        } else {
-          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-          $modalCountdown.text(`${days}h ${hours}j ${minutes}m ${seconds}d`);
-        }
-      } else if (statusMobil === 'selesai' && actualReturnDate && actualReturnTime && returnStatus) {
-        const endDateTimeStr = `${endRent} ${endTime}`;
-        const endDateTime = new Date(endDateTimeStr.replace(/-/, ' '));
-        const actualReturnDateTimeStr = `${actualReturnDate} ${actualReturnTime}`;
-        const actualReturnDateTime = new Date(actualReturnDateTimeStr.replace(/-/, ' '));
-
-        if (isNaN(endDateTime) || isNaN(actualReturnDateTime)) {
-          console.error(`Tanggal tidak valid untuk modal, endDateTimeStr: ${endDateTimeStr}, actualReturnDateTimeStr: ${actualReturnDateTimeStr}`);
-          $modalCountdown.text('Tanggal tidak valid');
-          return;
-        }
-
-        const timeDiff = endDateTime - actualReturnDateTime;
-        const absTimeDiff = Math.abs(timeDiff);
-        const minutes = Math.floor(absTimeDiff / (1000 * 60));
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-        const remainingHours = hours % 24;
-        const remainingMinutes = minutes % 60;
-
-        let displayText = '';
-        if (returnStatus === 'terlambat') {
-          displayText = `Terlambat ${days > 0 ? days + 'h ' : ''}${remainingHours}j ${remainingMinutes}m`;
-        } else if (returnStatus === 'lebih cepat') {
-          displayText = `Lebih cepat ${days > 0 ? days + 'h ' : ''}${remainingHours}j ${remainingMinutes}m`;
-        } else {
-          displayText = 'Tepat waktu';
-        }
-        $modalCountdown.text(displayText);
-      } else {
-        $modalCountdown.text('-');
-      }
-    }
   }
 
-  // Fungsi untuk menyortir tabel agar transaksi dengan status "digunakan" di atas
-  function sortTableByStatus() {
+  // Fungsi untuk menyortir tabel: Digunakan di atas, lalu urutkan berdasarkan date_rent menurun
+  function sortTableByStatusAndDate() {
     const $tbody = $('#list-data');
     const $rows = $tbody.find('tr').get();
 
     $rows.sort(function (a, b) {
       const statusA = $(a).find('.countdown').data('status');
       const statusB = $(b).find('.countdown').data('status');
-      if (statusA === 'digunakan' && statusB !== 'digunakan') return -1;
-      if (statusB === 'digunakan' && statusA !== 'digunakan') return 1;
-      return 0;
+      const dateRentA = $(a).find('td:nth-child(8)').text(); // Kolom Tanggal Rental
+      const dateRentB = $(b).find('td:nth-child(8)').text();
+
+      // Prioritaskan status "Digunakan"
+      if (statusA === 'Digunakan' && statusB !== 'Digunakan') return -1;
+      if (statusB === 'Digunakan' && statusA !== 'Digunakan') return 1;
+
+      // Jika status sama, urutkan berdasarkan date_rent menurun
+      const dateA = new Date(dateRentA.replace(/-/, ' '));
+      const dateB = new Date(dateRentB.replace(/-/, ' '));
+      return dateB - dateA; // Menurun: terbaru (dateB lebih besar) di atas
     });
 
     $tbody.empty();
     $.each($rows, function (index, row) {
       $tbody.append(row);
-      $(row).find('td:first').text(index + 1);
-    });
-  }
-
-  // Fungsi untuk menetapkan kelas CSS berdasarkan merek mobil
-  function applyCarColorClasses() {
-    const $rows = $('#list-data tr');
-    const carColors = {
-      'Toyota Avanza': 'car-color-1',
-      'Honda Jazz': 'car-color-2',
-      'Daihatsu Xenia': 'car-color-3',
-      'Suzuki Ertiga': 'car-color-4',
-      'Mitsubishi Xpander': 'car-color-5'
-    };
-
-    $rows.each(function () {
-      const item = $(this).data('item');
-      const colorClass = carColors[item] || 'car-color-default';
-      $(this).addClass(colorClass);
+      $(row).find('td:first').text(index + 1); // Perbarui nomor urut
     });
   }
 
   // Fungsi untuk menetapkan kelas CSS berdasarkan status transaksi
   function applyStatusClasses() {
     const $rows = $('#list-data tr');
-    const statusClasses = {
-      'digunakan': 'status-digunakan',
-      'selesai': 'status-selesai',
-      'pembayaran': 'status-pembayaran'
-    };
     const statusBadgeClasses = {
-      'digunakan': 'status-badge status-badge-digunakan',
-      'selesai': 'status-badge status-badge-selesai',
-      'pembayaran': 'status-badge status-badge-pembayaran'
+      'Digunakan': 'status-badge status-badge-Digunakan',
+      'completed': 'status-badge status-badge-completed',
+      'Sudah Bayar': 'status-badge status-badge-Sudah-Bayar',
+      'Dibatalkan': 'status-badge status-badge-Dibatalkan',
+      'canceled': 'status-badge status-badge-canceled',
     };
 
     $rows.each(function () {
       const status = $(this).find('.countdown').data('status');
-      const statusClass = statusClasses[status] || '';
-      const badgeClass = statusBadgeClasses[status] || 'status-badge';
-      $(this).addClass(statusClass);
-      // Ganti isi kolom status dengan badge
+      const badgeClass = statusBadgeClasses[status] || 'status-badge status-badge-default';
       const $statusCell = $(this).find('td#status');
       const statusText = $statusCell.find('span').text() || status;
       $statusCell.html(`<span class="${badgeClass}">${statusText}</span>`);
     });
+  }
+
+  // Fungsi untuk mengisi data ke modal
+  function populateModal(data) {
+    $('#modal-order-id').text(data.order_id);
+    $('#modal-item').text(data.item);
+    $('#modal-type-mobil').text(data.type_mobil);
+    $('#modal-plat').text(data.plat);
+    $('#modal-penyewa').text(data.penyewa);
+    $('#modal-lama-rental').text(data.lama_rental);
+    $('#modal-total').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.total));
+    $('#modal-date-rent').text(data.date_rent);
+    $('#modal-end-rent').text(data.end_rent).data('end-time', data.end_time);
+    $('#modal-status').text(data.status);
+    $('#modal-biaya-sopir').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.biaya_sopir));
+    $('#modal-gunakan-pengantaran').text(data.gunakan_pengantaran ? 'Ya' : 'Tidak');
+    $('#modal-delivery-cost').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.delivery_cost));
+    $('#modal-delivery-location').text(data.delivery_location || '-');
+    $('#modal-profile-image').attr('src', data.profile_image_path).on('error', function() {
+      $(this).attr('src', '/static/icon/user.jpg');
+    });
+    $('#modal-sim-image').attr('src', data.image_path).on('error', function() {
+      $(this).attr('src', '/static/icon/default_sim.png');
+    });
+    $('#transactionDetailModal').modal('show');
+    updateCountdown();
   }
 
   // Jalankan updateCountdown setiap detik
@@ -224,8 +160,7 @@ $(document).ready(function () {
 
   // Panggil sekali saat halaman dimuat
   updateCountdown();
-  sortTableByStatus();
-  applyCarColorClasses();
+  sortTableByStatusAndDate();
   applyStatusClasses();
 
   // Handler untuk tombol Detail
@@ -236,43 +171,40 @@ $(document).ready(function () {
       type: 'GET',
       url: `/api/transaction_detail/${orderId}`,
       success: function (response) {
-        console.log('Respons dari server:', response);
+        console.log('Respons dari /api/transaction_detail:', response);
         if (response.result === 'success') {
-          const data = response.data;
-          $('#modal-order-id').text(data.order_id);
-          $('#modal-item').text(data.item);
-          $('#modal-type-mobil').text(data.type_mobil);
-          $('#modal-plat').text(data.plat);
-          $('#modal-penyewa').text(data.penyewa);
-          $('#modal-lama-rental').text(data.lama_rental);
-          $('#modal-total').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.total));
-          $('#modal-date-rent').text(data.date_rent);
-          $('#modal-end-rent').text(data.end_rent).data('end-time', data.end_time);
-          $('#modal-status').text(data.status).removeClass('status-digunakan status-selesai status-pembayaran').addClass(`status-${data.status}`);
-          $('#modal-countdown')
-            .data('return-status', data.return_status || '')
-            .data('actual-return-date', data.actual_return_date || '')
-            .data('actual-return-time', data.actual_return_time || '');
-          $('#modal-biaya-sopir').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.biaya_sopir));
-          $('#modal-gunakan-pengantaran').text(data.gunakan_pengantaran ? 'Ya' : 'Tidak');
-          $('#modal-delivery-cost').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.delivery_cost));
-          $('#modal-delivery-location').text(data.delivery_location || '-');
-          $('#modal-profile-image').attr('src', data.profile_image_path).on('error', function() {
-            $(this).attr('src', '/static/icon/user.jpg');
-          });
-          $('#modal-sim-image').attr('src', data.image_path).on('error', function() {
-            $(this).attr('src', '/static/icon/default_sim.png');
-          });
-          $('#transactionDetailModal').modal('show');
-          updateCountdown();
+          populateModal(response.data);
         } else {
           console.error('Gagal mengambil detail transaksi:', response.msg);
           alert(response.msg || 'Gagal mengambil detail transaksi');
         }
       },
       error: function (xhr, status, error) {
-        console.error('Error AJAX:', status, error, xhr.responseText);
-        alert('Maaf, transaksi ini dilakukan manual');
+        console.error('Error AJAX /api/transaction_detail:', status, error, xhr.responseText);
+        alert('Gagal memuat detail transaksi');
+      }
+    });
+  });
+
+  // Handler untuk tombol Detail Admin
+  $(document).on('click', '.btn-detail-admin', function () {
+    const orderId = $(this).data('order-id');
+    console.log(`Mengambil detail admin untuk order_id: ${orderId}`);
+    $.ajax({
+      type: 'GET',
+      url: `/api/detail_admin/${orderId}`,
+      success: function (response) {
+        console.log('Respons dari /api/detail_admin:', response);
+        if (response.result === 'success') {
+          populateModal(response.data);
+        } else {
+          console.error('Gagal mengambil detail transaksi admin:', response.message);
+          alert(response.message || 'Gagal memuat detail transaksi admin');
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error('Error AJAX /api/detail_admin:', status, error, xhr.responseText);
+        alert('Gagal memuat detail transaksi admin');
       }
     });
   });
@@ -286,8 +218,8 @@ $(document).ready(function () {
     $('#imageZoomModal').modal('show');
   });
 
-  // Handler untuk tombol Reset
-  $(document).on('click', '#reset-filter', function () {
+  // Handler untuk tombol Batal (reload semua transaksi)
+  $(document).on('click', '#reload-page', function () {
     console.log('Resetting filter to show all transactions');
     $('#filter_transaksi').val('');
     $('#tanggal_input').remove();
@@ -304,7 +236,7 @@ $(document).ready(function () {
           );
         } else {
           for (let i = 0; i < response.length; i++) {
-            var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}">
+            var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}" data-user-id="${response[i].user_id || ''}">
                           <td>${i + 1}</td>
                           <td>${response[i].item}</td>
                           <td>${response[i].type_mobil}</td>
@@ -323,7 +255,10 @@ $(document).ready(function () {
                               data-actual-return-time="${response[i].actual_return_time || ''}"></td>
                           <td id="status"><span class="status-badge status-badge-${response[i].status}">${response[i].status}</span></td>
                           <td>
-                            <button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>
+                            ${response[i].user_id 
+                              ? `<button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>`
+                              : `<button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="${response[i].order_id}">Detail Admin</button>`
+                            }
                           </td>
                         </tr>`;
             $('#list-data').append(temp);
@@ -331,8 +266,7 @@ $(document).ready(function () {
           addStatusLabel();
           changeCurrency();
           updateCountdown();
-          sortTableByStatus();
-          applyCarColorClasses();
+          sortTableByStatusAndDate();
           applyStatusClasses();
         }
       },
@@ -378,7 +312,7 @@ $(document).ready(function () {
               );
             } else {
               for (let i = 0; i < response.length; i++) {
-                var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}">
+                var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}" data-user-id="${response[i].user_id || ''}">
                               <td>${i + 1}</td>
                               <td>${response[i].item}</td>
                               <td>${response[i].type_mobil}</td>
@@ -397,7 +331,10 @@ $(document).ready(function () {
                                   data-actual-return-time="${response[i].actual_return_time || ''}"></td>
                               <td id="status"><span class="status-badge status-badge-${response[i].status}">${response[i].status}</span></td>
                               <td>
-                                <button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>
+                                ${response[i].user_id 
+                                  ? `<button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>`
+                                  : `<button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="${response[i].order_id}">Detail Admin</button>`
+                                }
                               </td>
                             </tr>`;
                 $("#list-data").append(temp);
@@ -405,18 +342,17 @@ $(document).ready(function () {
               addStatusLabel();
               changeCurrency();
               updateCountdown();
-              sortTableByStatus();
-              applyCarColorClasses();
+              sortTableByStatusAndDate();
               applyStatusClasses();
             }
           },
           error: function (xhr, status, error) {
             console.error('Error filter tanggal:', status, error, xhr.responseText);
             alert('Gagal memuat transaksi untuk tanggal ini');
-            $("#tanggal_input").prop("disabled", false); // Aktifkan kembali input meskipun error
+            $("#tanggal_input").prop("disabled", false);
           },
           complete: function () {
-            $("#tanggal_input").prop("disabled", false); // Pastikan input diaktifkan kembali
+            $("#tanggal_input").prop("disabled", false);
           }
         });
       });
@@ -438,7 +374,7 @@ $(document).ready(function () {
             );
           } else {
             for (let i = 0; i < response.length; i++) {
-              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}">
+              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}" data-user-id="${response[i].user_id || ''}">
                             <td>${i + 1}</td>
                             <td>${response[i].item}</td>
                             <td>${response[i].type_mobil}</td>
@@ -457,7 +393,10 @@ $(document).ready(function () {
                                 data-actual-return-time="${response[i].actual_return_time || ''}"></td>
                             <td id="status"><span class="status-badge status-badge-${response[i].status}">${response[i].status}</span></td>
                             <td>
-                              <button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>
+                              ${response[i].user_id 
+                                ? `<button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>`
+                                : `<button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="${response[i].order_id}">Detail Admin</button>`
+                              }
                             </td>
                           </tr>`;
               $("#list-data").append(temp);
@@ -465,8 +404,7 @@ $(document).ready(function () {
             addStatusLabel();
             changeCurrency();
             updateCountdown();
-            sortTableByStatus();
-            applyCarColorClasses();
+            sortTableByStatusAndDate();
             applyStatusClasses();
           }
         },
@@ -493,7 +431,7 @@ $(document).ready(function () {
             );
           } else {
             for (let i = 0; i < response.length; i++) {
-              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}">
+              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}" data-user-id="${response[i].user_id || ''}">
                             <td>${i + 1}</td>
                             <td>${response[i].item}</td>
                             <td>${response[i].type_mobil}</td>
@@ -512,7 +450,10 @@ $(document).ready(function () {
                                 data-actual-return-time="${response[i].actual_return_time || ''}"></td>
                             <td id="status"><span class="status-badge status-badge-${response[i].status}">${response[i].status}</span></td>
                             <td>
-                              <button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>
+                              ${response[i].user_id 
+                                ? `<button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>`
+                                : `<button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="${response[i].order_id}">Detail Admin</button>`
+                              }
                             </td>
                           </tr>`;
               $("#list-data").append(temp);
@@ -520,8 +461,7 @@ $(document).ready(function () {
             addStatusLabel();
             changeCurrency();
             updateCountdown();
-            sortTableByStatus();
-            applyCarColorClasses();
+            sortTableByStatusAndDate();
             applyStatusClasses();
           }
         },
@@ -548,7 +488,7 @@ $(document).ready(function () {
             );
           } else {
             for (let i = 0; i < response.length; i++) {
-              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}">
+              var temp = `<tr data-order-id="${response[i].order_id}" data-item="${response[i].item}" data-user-id="${response[i].user_id || ''}">
                             <td>${i + 1}</td>
                             <td>${response[i].item}</td>
                             <td>${response[i].type_mobil}</td>
@@ -567,7 +507,10 @@ $(document).ready(function () {
                                 data-actual-return-time="${response[i].actual_return_time || ''}"></td>
                             <td id="status"><span class="status-badge status-badge-${response[i].status}">${response[i].status}</span></td>
                             <td>
-                              <button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>
+                              ${response[i].user_id 
+                                ? `<button class="btn btn-info btn-sm btn-detail" data-order-id="${response[i].order_id}">Detail</button>`
+                                : `<button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="${response[i].order_id}">Detail Admin</button>`
+                              }
                             </td>
                           </tr>`;
               $("#list-data").append(temp);
@@ -575,8 +518,7 @@ $(document).ready(function () {
             addStatusLabel();
             changeCurrency();
             updateCountdown();
-            sortTableByStatus();
-            applyCarColorClasses();
+            sortTableByStatusAndDate();
             applyStatusClasses();
           }
         },
@@ -587,7 +529,8 @@ $(document).ready(function () {
       });
     }
   });
-    $(document).on('click', '#reload-page', function () {
+
+  $(document).on('click', '#reload-page', function () {
     location.reload(); // Reload halaman
   });
 });

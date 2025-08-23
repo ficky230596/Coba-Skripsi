@@ -1,0 +1,24 @@
+.card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.map-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#map {
+    border-radius: 8px;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.btn-primary {
+    width: 150px;
+}

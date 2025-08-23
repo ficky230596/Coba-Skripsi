@@ -66,6 +66,14 @@ $(document).ready(function () {
       toastr.warning("Masukkan nama penyewa");
       return;
     }
+    if (!/^[a-zA-Z\s]+$/.test(penyewa)) {
+      toastr.warning("Nama penyewa hanya boleh berisi huruf dan spasi");
+      return;
+    }
+    if (penyewa.length < 3) {
+      toastr.warning("Nama penyewa minimal 3 karakter");
+      return;
+    }
     if (gunakan_pengantaran && !delivery_location) {
       toastr.warning("Masukkan lokasi pengantaran");
       return;

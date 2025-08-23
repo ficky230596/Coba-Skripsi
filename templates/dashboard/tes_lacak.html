@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tes Pelacakan Mobil</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/tes_lacak.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css">
+    <style>
+        #map { height: 400px; width: 100%; }
+        .leaflet-popup-content-wrapper { max-width: 300px; }
+        body { background-color: #f8f9fa; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/dashboard/tes_lacak.js') }}"></script>
+</head>
+<body>
+    <div class="container-fluid p-4">
+        <h2 class="text-primary mb-4">Tes Pelacakan Mobil</h2>
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <div class="card shadow p-4 mb-4">
+            <h4>Pilih Mobil untuk Pelacakan</h4>
+            <div class="mb-3">
+                <label for="mobil-select" class="form-label">Pilih Mobil</label>
+                <select id="mobil-select" class="form-select">
+                    <option value="">Pilih mobil</option>
+                    {% for mobil in mobil_digunakan %}
+                    <option value="{{ mobil.id_mobil }}" {% if mobil.id_mobil == selected_mobil_id %}selected{% endif %}>
+                        {{ mobil.merek }} - {{ mobil.plat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="mobil-info" {% if not selected_mobil_id %}style="display: none;"{% endif %}>
+                <h4>Perbarui Lokasi Mobil: <span id="mobil-name">{{ mobil.merek }} - {{ mobil.plat }}</span></h4>
+                <form id="form-lokasi">
+                    <input type="hidden" id="id_mobil" name="id_mobil" value="{{ selected_mobil_id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Koordinat Terpilih</label>
+                        <p id="selected-coords" class="form-text">Klik pada peta untuk memilih lokasi.</p>
+                        <input type="hidden" id="lat" name="lat">
+                        <input type="hidden" id="lon" name="lon">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="updateLokasi()" id="update-btn" disabled>Perbarui Lokasi</button>
+                </form>
+            </div>
+        </div>
+        <div class="map-container shadow">
+            <div id="map"></div>
+        </div>
+    </div>
+</body>
+</html>

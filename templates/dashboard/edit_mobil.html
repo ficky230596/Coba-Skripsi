@@ -4,28 +4,27 @@
 <script src="{{ url_for('static', filename='js/dashboard/editData.js') }}"></script>
 {% endblock %}
 
-
 {% block content %}
 
 <style>
-    .image-cont{
+    .image-cont {
         width: 25rem;
-        height:15rem;
+        height: 15rem;
         position: relative;
         cursor: pointer;
     }
     
-    .form_gambar{
+    .form_gambar {
         width: 25rem;
     }
     
-    .image-cont img{
+    .image-cont img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
     
-    .image-cont .text{
+    .image-cont .text {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -34,91 +33,86 @@
         padding: 1rem;
     }
     
-    .form_tambah_data .form_item{
+    .form_tambah_data .form_item {
         display: flex;
         flex-direction: column;
     }
 </style>
 
-
 <div class="form_tambah_data">
     <h1>Edit Mobil</h1>
   
     <div class="mb-3 form_item">
-      <label class="form-label">Merek Mobil</label>
-      <input type="text" class="form-control" id="merek"   value="{{data.merek}}">
+        <label class="form-label">Merek Mobil</label>
+        <input type="text" class="form-control" id="merek" value="{{data.merek}}">
     </div>
 
     <div class="mb-3 form_item">
-      <label class="form-label">Type Mobil</label>
-      <input type="text" class="form-control" id="type_mobil"   value="{{data.type_mobil}}">
+        <label class="form-label">Tipe Mobil</label>
+        <input type="text" class="form-control" id="type_mobil" value="{{data.type_mobil}}">
     </div>
 
     <div class="mb-3 form_item">
-      <label class="form-label">Plat Mobil</label>
-      <input type="text" class="form-control" id="plat"   value="{{data.plat}}">
+        <label class="form-label">Plat Mobil</label>
+        <input type="text" class="form-control" id="plat" value="{{data.plat}}">
     </div>
   
     <div class="mb-3 form_item">
-      <label class="form-label">Bahan Bakar</label>
-      <select class="form-control" id="bahan_bakar">
-        {% if data.transmissin == 'pertalite' %}
-        <option value="pertalite" selected>Pertalite</option>
-        <option value="matic">Pertamax</option>
-        <option value="matic">Solar</option>
-        {% else %}
-        <option value="pertalite">Pertalite</option>
-        <option value="pertamax" selected>Pertamax</option>
-        <option value="solar" selected>Solar</option>
-        {% endif %}
-      </select>
+        <label class="form-label">Bahan Bakar</label>
+        <select class="form-control" id="bahan_bakar">
+            <option value="pertalite" {% if data.bahan_bakar == 'pertalite' %}selected{% endif %}>Pertalite</option>
+            <option value="pertamax" {% if data.bahan_bakar == 'pertamax' %}selected{% endif %}>Pertamax</option>
+            <option value="solar" {% if data.bahan_bakar == 'solar' %}selected{% endif %}>Solar</option>
+        </select>
     </div>
 
     <div class="mb-3 form_item form_gambar">
-      <label for="">Gambar</label>
-      <label for="input-file" class="border image-cont mt-2 rounded">
-        <img src="{{ url_for('static', filename='Gambar/mobil/' + data.gambar) }}" alt="" id="imgPreview" class="rounded">
-      </label>
-      <label for="input-file" class="mt-2 p-3 btn btn-primary rounded text-center">Pilih gambar</label>
-      <input type="file" accept="image/jpeg,image/png,image/png" id="input-file" value="{{ url_for('static', filename='Gambar/' + data.gambar) }}" hidden>
+        <label for="input-file" class="form-label">Gambar</label>
+        <label for="input-file" class="border image-cont mt-2 rounded">
+            <img src="{{ url_for('static', filename='Gambar/mobil/' + data.gambar) }}" alt="" id="imgPreview" class="rounded">
+        </label>
+        <label for="input-file" class="mt-2 p-3 btn btn-primary rounded text-center">Pilih gambar</label>
+        <input type="file" accept="image/jpeg,image/png" id="input-file" hidden>
     </div>
   
     <div class="mb-3 form_item">
-      <label class="form-label">Seat</label>
-      <input type="number" class="form-control" id="seat"  value="{{data.seat}}">
+        <label class="form-label">Seat</label>
+        <input type="number" class="form-control" id="seat" value="{{data.seat}}">
     </div>
   
     <div class="mb-3 form_item">
-      <label class="form-label">Transmisi</label>
-      <select class="form-control" id="transmisi">
-        {% if data.transmissin == 'manual' %}
-        <option value="manual" selected>Manual</option>
-        <option value="matic">Matic</option>
-        {% else %}
-        <option value="manual">Manual</option>
-        <option value="matic" selected>Matic</option>
-        {% endif %}
-      </select>
+        <label class="form-label">Transmisi</label>
+        <select class="form-control" id="transmisi">
+            <option value="manual" {% if data.transmisi == 'manual' %}selected{% endif %}>Manual</option>
+            <option value="matic" {% if data.transmisi == 'matic' %}selected{% endif %}>Matic</option>
+        </select>
     </div>
   
     <div class="mb-3 form_item">
-      <label class="form-label">Harga Sewa</label>
-      <input type="text" class="form-control" id="harga" value="{{data.harga}}">
+        <label class="form-label">Harga Sewa</label>
+        <input type="text" class="form-control" id="harga" value="{{data.harga}}">
     </div>
-  
-    <button type="button" class="btn btn-primary" onclick="updateData('{{data.id_mobil}}')">Simpan</button>
-  
-  </div>
-  
 
-<!-- <p>{{data.item}}</p>
-<p>{{data.lama_rental}}</p>
-<p>{{data.end_rent}}</p>
+    <div class="mb-3 form_item">
+        <label class="form-label">GPS Device ID</label>
+        <input type="text" class="form-control" id="gps_device_id" value="{{data.gps_device_id or ''}}">
+    </div>
 
-<p>pelanggan sudah mengambil mobil jika sudah tekan konfirmasi</p>
-<button type="button" class="btn btn-primary" data-bs-toggle="button" onclick="changeStatusMobil()">
-    Button
-</button> -->
+    <div class="mb-3 form_item">
+        <label class="form-label">GPS Device Type</label>
+        <select class="form-control" id="gps_device_type">
+            <option value="" {% if not data.gps_device_type %}selected{% endif %}>Tidak Ada</option>
+            <option value="teltonika" {% if data.gps_device_type == 'teltonika' %}selected{% endif %}>Teltonika</option>
+            <option value="concox" {% if data.gps_device_type == 'concox' %}selected{% endif %}>Concox</option>
+        </select>
+    </div>
 
+    <div class="mb-3">
+        <label class="form-label">Status GPS</label>
+        <p>{{ 'Aktif' if data.gps_device_id and data.gps_device_type else 'Tidak Aktif' }}</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="btn_update" onclick="updateData('{{data.id_mobil}}')">Simpan</button>
+</div>
 
 {% endblock %}

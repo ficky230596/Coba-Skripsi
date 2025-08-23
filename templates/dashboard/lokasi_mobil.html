@@ -1,0 +1,149 @@
+{% extends 'dashboard/layout_dashboard.html' %}
+
+{% block title %}
+Lokasi Mobil
+{% endblock %}
+
+{% block css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+<!-- Toastr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css">
+<!-- CSS Kustom untuk Lokasi Mobil -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/lokasi_mobil.css') }}">
+<style>
+    .leaflet-popup-content-wrapper {
+        max-width: 300px;
+    }
+    .img-clickable {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Toastr JS -->
+<script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script type="module" src="{{ url_for('static', filename='js/dashboard/lokasi_mobil.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 data">
+    <div class="row g-0">
+        <div class="col-lg-8 col-12 order-lg-1 order-2">
+            <div class="map-container shadow">
+                <div id="map"></div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-12 order-lg-2 order-1">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h4 class="mb-3">Temukan Lokasi Mobil</h4>
+                    <div class="mb-3">
+                        <label class="form-label" for="mobil-select">Pilih Mobil</label>
+                        <select class="form-select" id="mobil-select" name="id_mobil">
+                            <option value="" disabled selected>Pilih mobil</option>
+                            {% for mobil in mobil_digunakan %}
+                            <option value="{{ mobil.id_mobil }}" data-lat="{{ mobil.lat|default(-1.474) }}"
+                                data-lon="{{ mobil.lon|default(124.842) }}" data-merek="{{ mobil.merek }}"
+                                data-plat="{{ mobil.plat }}">{{ mobil.merek }} - {{ mobil.plat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="find-mobil-btn" onclick="temukanMobil()" disabled>Temukan Mobil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk Detail Transaksi -->
+<div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-labelledby="transactionDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="transactionDetailModalLabel">Detail Transaksi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Informasi Transaksi</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <p><strong>Order ID:</strong> <span id="modal-order-id" class="text-muted"></span></p>
+                                        <p><strong>Mobil:</strong> <span id="modal-item" class="text-muted"></span></p>
+                                        <p><strong>Tipe Mobil:</strong> <span id="modal-type-mobil" class="text-muted"></span></p>
+                                        <p><strong>Plat:</strong> <span id="modal-plat" class="text-muted"></span></p>
+                                        <p><strong>Penyewa:</strong> <span id="modal-penyewa" class="text-muted"></span></p>
+                                        <p><strong>Lama Rental:</strong> <span id="modal-lama-rental" class="text-muted"></span></p>
+                                        <p><strong>Total:</strong> <span id="modal-total" class="text-muted"></span></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Tanggal Rental:</strong> <span id="modal-date-rent" class="text-muted"></span></p>
+                                        <p><strong>Akhir Rental:</strong> <span id="modal-end-rent" class="text-muted" data-end-time=""></span></p>
+                                        <p><strong>Waktu Tersisa:</strong> <span id="modal-countdown" class="text-muted" data-return-status="" data-actual-return-date="" data-actual-return-time=""></span></p>
+                                        <p><strong>Status:</strong> <span id="modal-status" class="text-muted"></span></p>
+                                        <p><strong>Biaya Sopir:</strong> <span id="modal-biaya-sopir" class="text-muted"></span></p>
+                                        <p><strong>Pengantaran:</strong> <span id="modal-gunakan-pengantaran" class="text-muted"></span></p>
+                                        <p><strong>Biaya Pengantaran:</strong> <span id="modal-delivery-cost" class="text-muted"></span></p>
+                                        <p><strong>Lokasi Pengantaran:</strong> <span id="modal-delivery-location" class="text-muted"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Foto Penyewa</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <p class="mb-1"><strong>Foto Profil</strong></p>
+                                    <img id="modal-profile-image" src="/static/icon/user.jpg" alt="Foto Profil" class="img-fluid img-thumbnail img-clickable" style="max-width: 150px;">
+                                </div>
+                                <div>
+                                    <p class="mb-1"><strong>Foto SIM</strong></p>
+                                    <img id="modal-sim-image" src="/static/icon/default_sim.png" alt="Foto SIM" class="img-fluid img-thumbnail img-clickable" style="max-width: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-modal-btn" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk Memperbesar Gambar -->
+<div class="modal fade" id="imageZoomModal" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageZoomModalLabel">Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="zoomed-image" src="" alt="Foto Zoom" class="img-fluid" style="max-width: 100%;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-zoom-modal-btn" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

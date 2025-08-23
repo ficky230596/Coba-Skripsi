@@ -23,7 +23,7 @@
       <select class="form-select" id="filter_transaksi">
         <option value="" selected disabled hidden>Filter</option>
         <option value="1">Tanggal Rental</option>
-        <option value="2">Sudah Bayar</option>
+        <option value="2">Selesai</option>
         <option value="3">Dibatalkan</option>
         <option value="4">Mobil Digunakan</option>
       </select>
@@ -55,7 +55,7 @@
     </thead>
     <tbody id="list-data">
       {% for dt in data %}
-      <tr data-order-id="{{ dt.order_id }}" data-item="{{ dt.item }}">
+      <tr data-order-id="{{ dt.order_id }}" data-item="{{ dt.item }}" data-user-id="{{ dt.user_id | default('') }}">
         <td>{{ loop.index }}</td>
         <td>{{ dt.item }}</td>
         <td>{{ dt.type_mobil }}</td>
@@ -66,12 +66,16 @@
         <td>{{ dt.date_rent }}</td>
         <td>{{ dt.end_rent }}</td>
         <td class="countdown" data-end-rent="{{ dt.end_rent }}" data-end-time="{{ dt.end_time }}"
-          data-status="{{ dt.status_mobil }}" data-return-status="{{ dt.status_pengembalian | default('') }}"
+          data-status="{{ dt.status }}" data-return-status="{{ dt.status_pengembalian | default('') }}"
           data-actual-return-date="{{ dt.actual_return_date | default('') }}"
           data-actual-return-time="{{ dt.actual_return_time | default('') }}"></td>
-        <td id="status"><span class="status-badge status-badge-{{ dt.status_mobil }}">{{ dt.status }}</span></td>
+        <td id="status"><span class="status-badge status-badge-{{ dt.status }}">{{ dt.status }}</span></td>
         <td>
+          {% if dt.user_id %}
           <button class="btn btn-info btn-sm btn-detail" data-order-id="{{ dt.order_id }}">Detail</button>
+          {% else %}
+          <button class="btn btn-warning btn-sm btn-detail-admin" data-order-id="{{ dt.order_id }}">Detail Admin</button>
+          {% endif %}
         </td>
       </tr>
       {% else %}
@@ -109,8 +113,6 @@
                 <p><strong>Total:</strong> <span id="modal-total" class="text-muted"></span></p>
                 <p><strong>Tanggal Rental:</strong> <span id="modal-date-rent" class="text-muted"></span></p>
                 <p><strong>Akhir Rental:</strong> <span id="modal-end-rent" class="text-muted"></span></p>
-                <!-- <p><strong>Waktu Tersisa:</strong> <span id="modal-countdown" data-return-status=""
-                    data-actual-return-date="" data-actual-return-time="" class="text-muted"></span></p> -->
                 <p><strong>Status:</strong> <span id="modal-status" class="text-muted"></span></p>
                 <p><strong>Biaya Sopir:</strong> <span id="modal-biaya-sopir" class="text-muted"></span></p>
                 <p><strong>Pengantaran:</strong> <span id="modal-gunakan-pengantaran" class="text-muted"></span></p>

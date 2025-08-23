@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_RentalMobil" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.37.0">
+  <process id="Process_RentalMobil" isExecutable="true">
+    <laneSet>
+      <lane id="Lane_Pengguna" name="Pengguna" />
+      <lane id="Lane_Sistem" name="Sistem" />
+      <lane id="Lane_Admin" name="Admin" />
+    </laneSet>
+    <startEvent id="StartEvent_1" name="Pengguna Mengakses Pemesanan">
+      <outgoing>Flow_1</outgoing>
+    </startEvent>
+    <task id="Task_1" name="Input Data Pemesanan">
+      <incoming>Flow_1</incoming>
+      <outgoing>Flow_2</outgoing>
+    </task>
+    <task id="Task_7" name="Lakukan Pembayaran">
+      <outgoing>Flow_15</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_1" name="Validasi Input">
+      <incoming>Flow_2</incoming>
+      <outgoing>Flow_3</outgoing>
+      <outgoing>Flow_4</outgoing>
+    </exclusiveGateway>
+    <task id="Task_2" name="Hitung Total Biaya">
+      <incoming>Flow_3</incoming>
+      <outgoing>Flow_5</outgoing>
+    </task>
+    <task id="Task_3" name="Integrasi Pembayaran dengan Midtrans">
+      <incoming>Flow_5</incoming>
+      <outgoing>Flow_6</outgoing>
+    </task>
+    <task id="Task_4" name="Tambahkan ke Antrian Prioritas">
+      <incoming>Flow_6</incoming>
+      <outgoing>Flow_7</outgoing>
+    </task>
+    <intermediateCatchEvent id="Timer_1" name="Tunggu 10 Detik">
+      <incoming>Flow_7</incoming>
+      <outgoing>Flow_8</outgoing>
+      <timerEventDefinition>
+        <timeDuration>PT10S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <exclusiveGateway id="Gateway_2" name="Cek Prioritas">
+      <incoming>Flow_8</incoming>
+      <outgoing>Flow_9</outgoing>
+      <outgoing>Flow_10</outgoing>
+    </exclusiveGateway>
+    <task id="Task_5" name="Simpan Transaksi ke MongoDB">
+      <incoming>Flow_9</incoming>
+      <outgoing>Flow_1hnm1lt</outgoing>
+    </task>
+    <task id="Task_6" name="Kirim Notifikasi WhatsApp">
+      <incoming>Flow_1hnm1lt</incoming>
+      <outgoing>Flow_1reqwqy</outgoing>
+    </task>
+    <task id="Task_8" name="Perbarui Status Transaksi (Berhasil)">
+      <incoming>Flow_15</incoming>
+      <outgoing>Flow_16</outgoing>
+    </task>
+    <task id="Task_9" name="Batalkan Transaksi">
+      <outgoing>Flow_17</outgoing>
+    </task>
+    <endEvent id="EndEvent_1" name="Transaksi Berhasil">
+      <incoming>Flow_16</incoming>
+    </endEvent>
+    <endEvent id="EndEvent_2" name="Transaksi Dibatalkan">
+      <incoming>Flow_4</incoming>
+      <incoming>Flow_10</incoming>
+      <incoming>Flow_17</incoming>
+    </endEvent>
+    <startEvent id="StartEvent_2" name="Admin Mengakses Dashboard">
+      <outgoing>Flow_18</outgoing>
+    </startEvent>
+    <task id="Task_10" name="Konfirmasi Pengembalian Mobil">
+      <incoming>Flow_16</incoming>
+      <outgoing>Flow_19</outgoing>
+    </task>
+    <task id="Task_11" name="Tambah Data Mobil">
+      <incoming>Flow_18</incoming>
+      <outgoing>Flow_13ipn9n</outgoing>
+      <outgoing>Flow_1pjrvvz</outgoing>
+    </task>
+    <task id="Task_12" name="Edit Data Mobil">
+      <incoming>Flow_18</incoming>
+      <incoming>Flow_13ipn9n</incoming>
+      <outgoing>Flow_1knzvvc</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_4">
+      <incoming>Flow_1knzvvc</incoming>
+      <incoming>Flow_1pjrvvz</incoming>
+      <outgoing>Flow_23</outgoing>
+      <outgoing>Flow_24</outgoing>
+    </exclusiveGateway>
+    <endEvent id="EndEvent_3" name="Proses Selesai">
+      <incoming>Flow_19</incoming>
+      <incoming>Flow_23</incoming>
+    </endEvent>
+    <endEvent id="EndEvent_4" name="Proses Gagal">
+      <incoming>Flow_24</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1" />
+    <sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="Gateway_1" />
+    <sequenceFlow id="Flow_3" name="Valid" sourceRef="Gateway_1" targetRef="Task_2" />
+    <sequenceFlow id="Flow_4" name="Tidak Valid" sourceRef="Gateway_1" targetRef="EndEvent_2" />
+    <sequenceFlow id="Flow_5" sourceRef="Task_2" targetRef="Task_3" />
+    <sequenceFlow id="Flow_6" sourceRef="Task_3" targetRef="Task_4" />
+    <sequenceFlow id="Flow_7" sourceRef="Task_4" targetRef="Timer_1" />
+    <sequenceFlow id="Flow_8" sourceRef="Timer_1" targetRef="Gateway_2" />
+    <sequenceFlow id="Flow_9" name="Prioritas Tertinggi" sourceRef="Gateway_2" targetRef="Task_5" />
+    <sequenceFlow id="Flow_10" name="Bukan Prioritas" sourceRef="Gateway_2" targetRef="EndEvent_2" />
+    <sequenceFlow id="Flow_15" sourceRef="Task_7" targetRef="Task_8" />
+    <sequenceFlow id="Flow_16" sourceRef="Task_8" targetRef="Task_10" />
+    <sequenceFlow id="Flow_17" sourceRef="Task_9" targetRef="EndEvent_2" />
+    <sequenceFlow id="Flow_18" sourceRef="StartEvent_2" targetRef="Task_11" />
+    <sequenceFlow id="Flow_19" sourceRef="Task_10" targetRef="EndEvent_3" />
+    <sequenceFlow id="Flow_23" name="Valid" sourceRef="Gateway_4" targetRef="EndEvent_3" />
+    <sequenceFlow id="Flow_24" name="Tidak Valid" sourceRef="Gateway_4" targetRef="EndEvent_4" />
+    <sequenceFlow id="Flow_1hnm1lt" sourceRef="Task_5" targetRef="Task_6" />
+    <eventBasedGateway id="Gateway_1jxjxp1">
+      <incoming>Flow_1reqwqy</incoming>
+    </eventBasedGateway>
+    <sequenceFlow id="Flow_1reqwqy" sourceRef="Task_6" targetRef="Gateway_1jxjxp1" />
+    <sequenceFlow id="Flow_13ipn9n" sourceRef="Task_11" targetRef="Task_12" />
+    <sequenceFlow id="Flow_1knzvvc" sourceRef="Task_12" targetRef="Gateway_4" />
+    <sequenceFlow id="Flow_1pjrvvz" sourceRef="Task_11" targetRef="Gateway_4" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane bpmnElement="Process_RentalMobil">
+      <bpmndi:BPMNShape id="Shape_Task_7" bpmnElement="Task_7">
+        <dc:Bounds x="1630" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_8" bpmnElement="Task_8">
+        <dc:Bounds x="1780" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_9" bpmnElement="Task_9">
+        <dc:Bounds x="1630" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1930" y="250" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1924" y="286" width="48" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_2" bpmnElement="EndEvent_2">
+        <dc:Bounds x="1780" y="400" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1772" y="436" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_2" bpmnElement="StartEvent_2">
+        <dc:Bounds x="230" y="550" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="203" y="586" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_11" bpmnElement="Task_11">
+        <dc:Bounds x="380" y="530" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_4" bpmnElement="Gateway_4" isMarkerVisible="true">
+        <dc:Bounds x="830" y="550" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="688" y="511" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_4" bpmnElement="EndEvent_4">
+        <dc:Bounds x="1580" y="700" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1565" y="736" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="170" y="110" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="159" y="146" width="59" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_1" bpmnElement="Task_1">
+        <dc:Bounds x="270" y="90" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_5" bpmnElement="Task_5">
+        <dc:Bounds x="1250" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_6" bpmnElement="Task_6">
+        <dc:Bounds x="1390" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_1" bpmnElement="Gateway_1" isMarkerVisible="true">
+        <dc:Bounds x="375" y="245" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="367" y="221" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_2" bpmnElement="Task_2">
+        <dc:Bounds x="520" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_3" bpmnElement="Task_3">
+        <dc:Bounds x="670" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_4" bpmnElement="Task_4">
+        <dc:Bounds x="820" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Timer_1" bpmnElement="Timer_1">
+        <dc:Bounds x="982" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="959" y="288" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_2" bpmnElement="Gateway_2" isMarkerVisible="true">
+        <dc:Bounds x="1105" y="245" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1098" y="221" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1jxjxp1_di" bpmnElement="Gateway_1jxjxp1">
+        <dc:Bounds x="1555" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_12" bpmnElement="Task_12">
+        <dc:Bounds x="380" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_10" bpmnElement="Task_10">
+        <dc:Bounds x="2070" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_3" bpmnElement="EndEvent_3">
+        <dc:Bounds x="2242" y="557" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2223" y="593" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="370" y="130" />
+        <di:waypoint x="380" y="130" />
+        <di:waypoint x="380" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="400" y="295" />
+        <di:waypoint x="400" y="400" />
+        <di:waypoint x="1798" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="413" y="340" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_8" bpmnElement="Flow_8">
+        <di:waypoint x="1018" y="270" />
+        <di:waypoint x="1105" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_9" bpmnElement="Flow_9">
+        <di:waypoint x="1155" y="270" />
+        <di:waypoint x="1250" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1161" y="243" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_10" bpmnElement="Flow_10">
+        <di:waypoint x="1130" y="295" />
+        <di:waypoint x="1130" y="400" />
+        <di:waypoint x="1798" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1142" y="340" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_15" bpmnElement="Flow_15">
+        <di:waypoint x="1730" y="118" />
+        <di:waypoint x="1730" y="250" />
+        <di:waypoint x="1780" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_16" bpmnElement="Flow_16">
+        <di:waypoint x="1880" y="300" />
+        <di:waypoint x="1880" y="490" />
+        <di:waypoint x="2070" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_17" bpmnElement="Flow_17">
+        <di:waypoint x="1730" y="400" />
+        <di:waypoint x="1780" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_18" bpmnElement="Flow_18">
+        <di:waypoint x="266" y="568" />
+        <di:waypoint x="380" y="568" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_19" bpmnElement="Flow_19">
+        <di:waypoint x="2170" y="490" />
+        <di:waypoint x="2200" y="490" />
+        <di:waypoint x="2200" y="557" />
+        <di:waypoint x="2260" y="557" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_23" bpmnElement="Flow_23">
+        <di:waypoint x="880" y="575" />
+        <di:waypoint x="2242" y="575" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="988" y="543" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_24" bpmnElement="Flow_24">
+        <di:waypoint x="855" y="600" />
+        <di:waypoint x="855" y="700" />
+        <di:waypoint x="1580" y="700" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="843" y="640" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="206" y="128" />
+        <di:waypoint x="270" y="128" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hnm1lt_di" bpmnElement="Flow_1hnm1lt">
+        <di:waypoint x="1350" y="265" />
+        <di:waypoint x="1390" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="425" y="270" />
+        <di:waypoint x="520" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="461" y="245" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_5" bpmnElement="Flow_5">
+        <di:waypoint x="620" y="270" />
+        <di:waypoint x="670" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_6" bpmnElement="Flow_6">
+        <di:waypoint x="770" y="270" />
+        <di:waypoint x="820" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_7" bpmnElement="Flow_7">
+        <di:waypoint x="920" y="270" />
+        <di:waypoint x="982" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1reqwqy_di" bpmnElement="Flow_1reqwqy">
+        <di:waypoint x="1490" y="265" />
+        <di:waypoint x="1523" y="265" />
+        <di:waypoint x="1523" y="270" />
+        <di:waypoint x="1555" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13ipn9n_di" bpmnElement="Flow_13ipn9n">
+        <di:waypoint x="430" y="530" />
+        <di:waypoint x="430" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1knzvvc_di" bpmnElement="Flow_1knzvvc">
+        <di:waypoint x="480" y="470" />
+        <di:waypoint x="855" y="470" />
+        <di:waypoint x="855" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pjrvvz_di" bpmnElement="Flow_1pjrvvz">
+        <di:waypoint x="480" y="570" />
+        <di:waypoint x="655" y="570" />
+        <di:waypoint x="655" y="575" />
+        <di:waypoint x="830" y="575" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

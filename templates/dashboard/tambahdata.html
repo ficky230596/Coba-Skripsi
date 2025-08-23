@@ -1,73 +1,86 @@
 {% extends 'dashboard/layout_dashboard.html' %}
 
-{% block javascript %}
-<script src="{{ url_for('static', filename='js/dashboard/tambahdata.js') }}" type="text/javascript"></script>
+{% block title %}
+Tambah Data Mobil
 {% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard/tambahdata.css') }}">
 {% endblock %}
 
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/dashboard/tambahdata.js') }}" type="text/javascript"></script>
+{% endblock %}
+
 {% block content %}
-<h2 class="text-primary px-4 m-0">Tambah Data Mobil</h2>
-
-<div class="form_tambah_data p-4">
-  <div class="mb-3 form_item">
-    <label class="form-label">Merek Mobil</label>
-    <input type="text" class="form-control" id="merek" placeholder="">
-  </div>
-
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Type Mobil</label>
-    <input type="text" class="form-control" id="type_mobil" placeholder="" required>
-  </div>
-
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Nomor Plat</label>
-    <input type="text" class="form-control" id="plat" placeholder="">
-  </div>
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Bahan Bakar</label>
-    <select class="form-control" id="bahan_bakar">
-      <option value="pertalite">Pertalite</option>
-      <option value="pertamax">Pertamax</option>
-      <option value="solar">Solar</option>
-    </select>
-  </div>
-
-  <div class="mb-3 form_item form_gambar">
-    <label for="">Gambar</label>
-    <label for="input-file" class="border image-cont mt-2 rounded">
-      <img src="" alt="" id="imgPreview" hidden class="rounded">
-    </label>
-    <label for="input-file" class="mt-2 p-3 btn btn-primary rounded text-center">Pilih gambar</label>
-    <input type="file" accept="image/jpeg,image/png,image/png" id="input-file" hidden>
-  </div>
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Seat</label>
-    <input type="number" class="form-control" id="seat" placeholder="">
-  </div>
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Transmisi</label>
-    <select class="form-control" id="transmisi">
-      <option value="manual">Manual</option>
-      <option value="matic">Matic</option>
-    </select>
-  </div>
-
-  <div class="mb-3 form_item">
-    <label class="form-label">Harga Sewa</label>
-    <input type="text" class="form-control" id="harga" placeholder="">
-  </div>
-
-  <button type="button" class="btn btn-primary" onclick="addData()">Tambah</button>
-
+<div class="title-dashboard">
+    <div class="title d-flex align-items-center justify-content-between w-100">
+        <h2 class="text-primary m-0">Tambah Data Mobil</h2>
+    </div>
 </div>
 
-
+<div class="container-fluid p-0 p-4 data">
+    <div class="form_tambah_data shadow p-4 rounded">
+        <form id="form-tambah-data">
+            <div class="mb-3 form_item">
+                <label class="form-label">Merek Mobil <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="merek" placeholder="Masukkan merek mobil" required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Tipe Mobil <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="type_mobil" placeholder="Masukkan tipe mobil" required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Nomor Plat <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="plat" placeholder="Masukkan nomor plat (contoh: B 1234 ABC)" required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Bahan Bakar <span class="text-danger">*</span></label>
+                <select class="form-control" id="bahan_bakar" required>
+                    <option value="" disabled selected>Pilih bahan bakar</option>
+                    <option value="pertalite">Pertalite</option>
+                    <option value="pertamax">Pertamax</option>
+                    <option value="solar">Solar</option>
+                </select>
+            </div>
+            <div class="mb-3 form_item form_gambar">
+                <label class="form-label">Gambar <span class="text-danger">*</span></label>
+                <label for="input-file" class="border image-cont mt-2 rounded d-block text-center">
+                    <img src="" alt="Pratinjau Gambar" id="imgPreview" hidden class="rounded w-100">
+                </label>
+                <label for="input-file" class="mt-2 p-3 btn btn-primary rounded text-center d-block">Pilih Gambar</label>
+                <input type="file" accept="image/jpeg,image/png" id="input-file" hidden required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Seat <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="seat" placeholder="Masukkan jumlah kursi" required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Transmisi <span class="text-danger">*</span></label>
+                <select class="form-control" id="transmisi" required>
+                    <option value="" disabled selected>Pilih transmisi</option>
+                    <option value="manual">Manual</option>
+                    <option value="matic">Matic</option>
+                </select>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">Harga Sewa <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="harga" placeholder="Masukkan harga sewa" required>
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">GPS Device ID (Opsional)</label>
+                <input type="text" class="form-control" id="gps_device_id" placeholder="Masukkan ID perangkat GPS">
+            </div>
+            <div class="mb-3 form_item">
+                <label class="form-label">GPS Device Type (Opsional)</label>
+                <select class="form-control" id="gps_device_type">
+                    <option value="">Pilih tipe (opsional)</option>
+                    <option value="teltonika">Teltonika</option>
+                    <option value="concox">Concox</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" id="btn_tambah" onclick="addData()">Tambah</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

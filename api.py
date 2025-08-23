@@ -2,11 +2,14 @@ from datetime import datetime, timedelta
 from threading import Thread, Lock
 from time import sleep
 from pytz import timezone
+import re  # Tambahkan impor ini
 import hashlib
 import heapq
 import json
 import jwt
+import random
 import logging
+import pymongo
 import midtransclient
 import os
 from dotenv import load_dotenv
@@ -1252,6 +1255,9 @@ def reg():
         return jsonify(
             {"result": "ejectedPhone", "msg": "Nomor telepon tidak boleh kosong"}
         )
+        
+        
+    #Tambah Jika User measukan 62 harus di hapus
 
     # Normalisasi nomor telepon: hapus spasi dan tanda "+"
     normalized_phone = phone.replace(" ", "").replace("+", "")
@@ -1460,7 +1466,7 @@ def get_transaction_detail(order_id):
         user = db.users.find_one({"user_id": transaction["user_id"]})
         if not user:
             logger.error(f"Pengguna tidak ditemukan: user_id={transaction['user_id']}")
-            return jsonify({"result": "error", "msg": "Pengguna tidak ditemukan"}), 404
+            return jsonify({"result": "error", "msg": "Teransaksi di lakukan manual"}), 404
 
         response = {
             "order_id": transaction["order_id"],
@@ -1592,15 +1598,22 @@ def filter_transaksi():
         query = {}
 
         if mtd == "fTanggal":
+            if not date:
+                return jsonify({"result": "error", "msg": "Tanggal tidak diberikan"}), 400
             query["date_rent"] = {"$regex": date, "$options": "i"}
         elif mtd == "fPaid":
-            query["status"] = "completed"
+            query["status"] = "completed"  # Ubah "completed" menjadi "Sudah Bayar" untuk konsistensi
         elif mtd == "fUnpaid":
-            query["status"] = "Dibatalkan"
+            query["status"] = {"$in": ["Dibatalkan", "canceled"]}  # Sertakan "canceled"
         elif mtd == "fDigunakan":
-            query["status_mobil"] = "digunakan"
+            query["status"] = "Digunakan"
+            query["end_rent"] = {"$exists": True, "$ne": ""}
+            query["end_time"] = {"$exists": True, "$ne": ""}
+        else:
+            return jsonify({"result": "error", "msg": "Metode filter tidak valid"}), 400
 
-        transactions = list(db.transaction.find(query))
+        # Urutkan berdasarkan date_rent menurun
+        transactions = list(db.transaction.find(query).sort("date_rent", -1))
         response = [
             {
                 "order_id": trans["order_id"],
@@ -1614,7 +1627,6 @@ def filter_transaksi():
                 "end_rent": trans.get("end_rent", ""),
                 "end_time": trans.get("end_time", ""),
                 "status": trans.get("status", ""),
-                "status_mobil": trans.get("status_mobil", ""),
                 "return_status": trans.get("status_pengembalian", ""),
                 "actual_return_date": trans.get("actual_return_date", ""),
                 "actual_return_time": trans.get("actual_return_time", ""),
@@ -1648,173 +1660,281 @@ def get_car(id):
 
 @api.route("/api/add_transaction_from_admin", methods=["POST"])
 def add_transaction_from_admin():
-    # Ambil data dari form
-    mtd = request.form.get("mtd")
-    id_mobil = request.form.get("id_mobil")
-    hari = request.form.get("hari")
-    penyewa = request.form.get("penyewa")
-    gunakan_sopir = request.form.get("gunakan_sopir") == "true"
-    gunakan_pengantaran = request.form.get("gunakan_pengantaran") == "true"
-    delivery_cost = (
-        int(request.form.get("delivery_cost", 0)) if gunakan_pengantaran else 0
-    )
-    delivery_location = (
-        request.form.get("delivery_location", "") if gunakan_pengantaran else ""
-    )
-    delivery_lat = (
-        float(request.form.get("delivery_lat"))
-        if request.form.get("delivery_lat")
-        else None
-    )
-    delivery_lon = (
-        float(request.form.get("delivery_lon"))
-        if request.form.get("delivery_lon")
-        else None
-    )
-
-    # Validasi input
-    if not mtd or not id_mobil or not hari or not penyewa:
-        logger.error(
-            f"Data tidak lengkap: mtd={mtd}, id_mobil={id_mobil}, hari={hari}, penyewa={penyewa}"
-        )
-        return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Data tidak lengkap: mtd, id_mobil, hari, dan penyewa harus diisi",
-                }
-            ),
-            400,
-        )
-
     try:
-        hari = int(hari)
-        if hari < 1:
-            raise ValueError("Hari harus lebih besar dari 0")
-    except (TypeError, ValueError):
-        logger.error(f"Jumlah hari tidak valid: {hari}")
-        return jsonify({"result": "failed", "message": "Jumlah hari tidak valid"}), 400
-
-    if gunakan_pengantaran and (
-        not delivery_location or not delivery_lat or not delivery_lon
-    ):
-        logger.error(
-            f"Lokasi pengantaran atau koordinat tidak lengkap untuk id_mobil: {id_mobil}"
+        # Ambil data dari form
+        mtd = request.form.get("mtd")
+        id_mobil = request.form.get("id_mobil")
+        hari = request.form.get("hari")
+        penyewa = request.form.get("penyewa")
+        phone = request.form.get("phone")  # Nomor telepon penyewa (opsional)
+        gunakan_sopir = request.form.get("gunakan_sopir") == "true"
+        gunakan_pengantaran = request.form.get("gunakan_pengantaran") == "true"
+        delivery_cost = (
+            int(request.form.get("delivery_cost", 0)) if gunakan_pengantaran else 0
         )
-        return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Lokasi pengantaran dan koordinat (lat, lon) harus diisi jika menggunakan pengantaran",
-                }
-            ),
-            400,
+        delivery_location = (
+            request.form.get("delivery_location", "") if gunakan_pengantaran else ""
         )
 
-    valid_delivery_costs = [0, 100000, 200000]
-    if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
-        logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
-        return (
-            jsonify(
-                {
-                    "result": "failed",
-                    "message": "Biaya pengantaran harus 0, 100000, atau 200000",
-                }
-            ),
-            400,
+        # Log data yang diterima
+        logger.info(
+            f"Data diterima: mtd={mtd}, id_mobil={id_mobil}, hari={hari}, penyewa={penyewa}, "
+            f"phone={phone}, gunakan_sopir={gunakan_sopir}, gunakan_pengantaran={gunakan_pengantaran}, "
+            f"delivery_cost={delivery_cost}, delivery_location={delivery_location}"
         )
 
-    # Ambil data mobil
-    data_mobil = db.dataMobil.find_one({"id_mobil": id_mobil})
-    if not data_mobil:
-        logger.error(f"Mobil tidak ditemukan: id_mobil={id_mobil}")
-        return jsonify({"result": "failed", "message": "Mobil tidak ditemukan"}), 404
+        # Validasi input
+        if not mtd or not id_mobil or not hari or not penyewa:
+            logger.error(
+                f"Data tidak lengkap: mtd={mtd}, id_mobil={id_mobil}, hari={hari}, penyewa={penyewa}"
+            )
+            return (
+                jsonify(
+                    {
+                        "result": "failed",
+                        "message": "Data tidak lengkap: mtd, id_mobil, hari, dan penyewa harus diisi",
+                    }
+                ),
+                400,
+            )
 
-    # Cek status mobil
-    if data_mobil.get("status_transaksi") in ["pembayaran", "digunakan"]:
-        logger.error(
-            f"Mobil sudah digunakan atau dalam proses pembayaran: id_mobil={id_mobil}"
+        if not re.match(r'^[a-zA-Z\s]+$', penyewa) or len(penyewa) < 3:
+            logger.error(f"Nama penyewa tidak valid: {penyewa}")
+            return (
+                jsonify(
+                    {
+                        "result": "failed",
+                        "message": "Nama penyewa hanya boleh berisi huruf dan spasi, minimal 3 karakter",
+                    }
+                ),
+                400,
+            )
+
+        # Validasi nomor telepon (opsional)
+        cleaned_phone = None
+        if phone:
+            cleaned_phone = "".join(filter(str.isdigit, phone))
+            if cleaned_phone.startswith("0"):
+                cleaned_phone = "62" + cleaned_phone[1:]
+            elif not cleaned_phone.startswith("62"):
+                cleaned_phone = "62" + cleaned_phone
+            if not cleaned_phone.isdigit() or len(cleaned_phone) < 10 or len(cleaned_phone) > 15:
+                logger.error(f"Nomor telepon tidak valid: {phone} -> {cleaned_phone}")
+                return (
+                    jsonify(
+                        {
+                            "result": "failed",
+                            "message": "Nomor telepon tidak valid",
+                        }
+                    ),
+                    400,
+                )
+
+        try:
+            hari = int(hari)
+            if hari < 1:
+                raise ValueError("Hari harus lebih besar dari 0")
+        except (TypeError, ValueError) as e:
+            logger.error(f"Jumlah hari tidak valid: {hari}, error: {str(e)}")
+            return jsonify({"result": "failed", "message": "Jumlah hari tidak valid"}), 400
+
+        if gunakan_pengantaran and not delivery_location:
+            logger.error(f"Lokasi pengantaran tidak diisi untuk id_mobil: {id_mobil}")
+            return (
+                jsonify(
+                    {
+                        "result": "failed",
+                        "message": "Lokasi pengantaran harus diisi jika menggunakan pengantaran",
+                    }
+                ),
+                400,
+            )
+
+        valid_delivery_costs = [0, 100000, 200000]
+        if gunakan_pengantaran and delivery_cost not in valid_delivery_costs:
+            logger.error(f"Biaya pengantaran tidak valid: {delivery_cost}")
+            return (
+                jsonify(
+                    {
+                        "result": "failed",
+                        "message": "Biaya pengantaran harus 0, 100000, atau 200000",
+                    }
+                ),
+                400,
+            )
+
+        # Ambil data mobil
+        logger.info(f"Mencari mobil dengan id_mobil: {id_mobil}")
+        data_mobil = db.dataMobil.find_one({"id_mobil": id_mobil})
+        if not data_mobil:
+            logger.error(f"Mobil tidak ditemukan: id_mobil={id_mobil}")
+            return jsonify({"result": "failed", "message": "Mobil tidak ditemukan"}), 404
+
+        # Cek status mobil
+        if data_mobil.get("status_transaksi") in ["pembayaran", "digunakan"]:
+            logger.error(
+                f"Mobil sudah digunakan atau dalam proses pembayaran: id_mobil={id_mobil}"
+            )
+            return jsonify({"result": "failed", "message": "Mobil tidak tersedia"}), 409
+
+        # Ambil data GPS jika tersedia
+        delivery_lat = None
+        delivery_lon = None
+        if data_mobil.get("gps_device_id") and data_mobil.get("gps_device_type"):
+            logger.info(f"Mengambil data GPS untuk id_mobil: {id_mobil}")
+            gps_data = get_gps_data(id_mobil, data_mobil["gps_device_type"])
+            if gps_data and isinstance(gps_data.get("lat"), (int, float)) and isinstance(gps_data.get("lon"), (int, float)):
+                delivery_lat = gps_data["lat"]
+                delivery_lon = gps_data["lon"]
+                logger.info(f"Data GPS ditemukan: lat={delivery_lat}, lon={delivery_lon}")
+            else:
+                logger.warning(f"Data GPS tidak valid untuk id_mobil: {id_mobil}")
+
+        # Hitung total harga
+        try:
+            harga_per_hari = int(data_mobil["harga"])
+        except (TypeError, ValueError) as e:
+            logger.error(f"Harga mobil tidak valid: {data_mobil.get('harga')}, error: {str(e)}")
+            return jsonify({"result": "failed", "message": "Harga mobil tidak valid"}), 400
+
+        biaya_sopir = 100000 * hari if gunakan_sopir else 0
+        total_harga = harga_per_hari * hari + biaya_sopir + delivery_cost
+        logger.info(
+            f"Total harga dihitung: {total_harga} (harga_per_hari={harga_per_hari}, hari={hari}, "
+            f"biaya_sopir={biaya_sopir}, delivery_cost={delivery_cost})"
         )
-        return jsonify({"result": "failed", "message": "Mobil tidak tersedia"}), 409
 
-    # Hitung total harga
-    harga_per_hari = int(data_mobil["harga"])
-    biaya_sopir = 100000 * hari if gunakan_sopir else 0
-    total_harga = harga_per_hari * hari + biaya_sopir + delivery_cost
+        # Buat transaksi
+        order_id = str(uuid.uuid1())
+        wita = timezone("Asia/Makassar")
+        now = datetime.now(wita)
+        date_rent = now.strftime("%d-%B-%Y")
+        time_rent = now.strftime("%H:%M")
+        end_rent = (now + timedelta(days=hari)).strftime("%d-%B-%Y")
+        end_time = (now + timedelta(days=hari)).strftime("%H:%M")
 
-    # Buat transaksi
-    order_id = str(uuid.uuid1())
-    date_rent = datetime.now().strftime("%d-%B-%Y")
-    time_rent = datetime.now().strftime("%H:%M")
-    end_rent = (datetime.now() + timedelta(days=hari)).strftime("%d-%B-%Y")
-    end_time = (datetime.now() + timedelta(days=hari)).strftime("%H:%M")
+        transaksi = {
+            "user_id": "",
+            "order_id": order_id,
+            "id_mobil": id_mobil,
+            "penyewa": penyewa,
+            "phone": cleaned_phone,
+            "transaction_token": "cash",
+            "item": data_mobil["merek"],
+            "type_mobil": data_mobil.get("type_mobil", ""),
+            "plat": data_mobil.get("plat", ""),
+            "bahan_bakar": data_mobil.get("bahan_bakar", ""),
+            "seat": data_mobil.get("seat", ""),
+            "transmisi": data_mobil.get("transmisi", ""),
+            "total": total_harga,
+            "lama_rental": f"{hari} hari",
+            "date_rent": date_rent,
+            "time_rent": time_rent,
+            "end_rent": end_rent,
+            "end_time": end_time,
+            "status": "sudah bayar",
+            "biaya_sopir": biaya_sopir,
+            "gunakan_pengantaran": gunakan_pengantaran,
+            "delivery_cost": delivery_cost,
+            "delivery_location": delivery_location,
+            "delivery_lat": delivery_lat,
+            "delivery_lon": delivery_lon,
+            "status_mobil": "Diproses",
+            "created_at": now,
+            "payment_confirmed_at": now,
+        }
 
-    transaksi = {
-        "user_id": "",
-        "order_id": order_id,
-        "id_mobil": id_mobil,
-        "penyewa": penyewa,
-        "transaction_token": "cash",
-        "item": data_mobil["merek"],
-        "type_mobil": data_mobil.get("type_mobil", ""),
-        "plat": data_mobil.get("plat", ""),
-        "bahan_bakar": data_mobil.get("bahan_bakar", ""),
-        "seat": data_mobil.get("seat", ""),
-        "transmisi": data_mobil.get("transmisi", ""),
-        "total": total_harga,
-        "lama_rental": f"{hari} hari",
-        "date_rent": date_rent,
-        "time_rent": time_rent,
-        "end_rent": end_rent,
-        "end_time": end_time,
-        "status": "sudah bayar",
-        "biaya_sopir": biaya_sopir,
-        "gunakan_pengantaran": gunakan_pengantaran,
-        "delivery_cost": delivery_cost,
-        "delivery_location": delivery_location,
-        "delivery_lat": delivery_lat,
-        "delivery_lon": delivery_lon,
-        "status_mobil": "digunakan",
-        "created_at": datetime.now(),
-    }
-
-    # Simpan transaksi ke database
-    db.transaction.insert_one(transaksi)
-    db.dataMobil.update_one(
-        {"id_mobil": id_mobil},
-        {
-            "$set": {
-                "status": "Digunakan",
-                "status_transaksi": "digunakan",
-                "order_id": order_id,
-            }
-        },
-    )
-
-    # Kembalikan respons dengan informasi mobil
-    return (
-        jsonify(
+        # Simpan transaksi ke database
+        logger.info(f"Menyimpan transaksi dengan order_id: {order_id}")
+        db.transaction.insert_one(transaksi)
+        db.dataMobil.update_one(
+            {"id_mobil": id_mobil},
             {
-                "result": "success",
-                "message": "Transaksi Berhasil",
-                "data": {
+                "$set": {
+                    "status": "Diproses",
+                    "status_transaksi": "diproses",
                     "order_id": order_id,
-                    "merek": data_mobil["merek"],
-                    "type_mobil": data_mobil.get("type_mobil", ""),
-                    "plat": data_mobil.get("plat", ""),
-                    "bahan_bakar": data_mobil.get("bahan_bakar", ""),
-                    "seat": data_mobil.get("seat", ""),
-                    "transmisi": data_mobil.get("transmisi", ""),
-                    "total": total_harga,
-                    "lama_rental": f"{hari} hari",
-                    "penyewa": penyewa,
-                    "date_rent": date_rent,
-                    "end_rent": end_rent,
-                },
-            }
-        ),
-        200,
-    )
+                }
+            },
+        )
+
+        # Kembalikan respons dengan informasi mobil
+        logger.info(f"Transaksi berhasil untuk order_id: {order_id}")
+        return (
+            jsonify(
+                {
+                    "result": "success",
+                    "message": "Transaksi Berhasil, menunggu konfirmasi admin",
+                    "data": {
+                        "order_id": order_id,
+                        "merek": data_mobil["merek"],
+                        "type_mobil": data_mobil.get("type_mobil", ""),
+                        "plat": data_mobil.get("plat", ""),
+                        "bahan_bakar": data_mobil.get("bahan_bakar", ""),
+                        "seat": data_mobil.get("seat", ""),
+                        "transmisi": data_mobil.get("transmisi", ""),
+                        "total": total_harga,
+                        "lama_rental": f"{hari} hari",
+                        "penyewa": penyewa,
+                        "date_rent": date_rent,
+                        "end_rent": end_rent,
+                        "delivery_lat": delivery_lat,
+                        "delivery_lon": delivery_lon,
+                        "delivery_location": delivery_location,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error saat memproses transaksi: {str(e)}", exc_info=True)
+        return (
+            jsonify(
+                {
+                    "result": "failed",
+                    "message": f"Terjadi kesalahan: {str(e)}",
+                }
+            ),
+            500,
+        )
+
+
+
+
+@api.route("/api/detail_admin/<order_id>", methods=["GET"])
+def detail_admin(order_id):
+    try:
+        transaksi = db.transaction.find_one({"order_id": order_id})
+        if not transaksi:
+            logger.error(f"Transaksi tidak ditemukan: order_id={order_id}")
+            return jsonify({"result": "failed", "message": "Transaksi tidak ditemukan"}), 404
+
+        data = {
+            "order_id": transaksi["order_id"],
+            "item": transaksi.get("item", ""),
+            "type_mobil": transaksi.get("type_mobil", ""),
+            "plat": transaksi.get("plat", ""),
+            "penyewa": transaksi.get("penyewa", ""),
+            "lama_rental": transaksi.get("lama_rental", ""),
+            "total": transaksi.get("total", 0),
+            "date_rent": transaksi.get("date_rent", ""),
+            "end_rent": transaksi.get("end_rent", ""),
+            "end_time": transaksi.get("end_time", ""),
+            "status": transaksi.get("status", ""),
+            "biaya_sopir": transaksi.get("biaya_sopir", 0),
+            "gunakan_pengantaran": transaksi.get("gunakan_pengantaran", False),
+            "delivery_cost": transaksi.get("delivery_cost", 0),
+            "delivery_location": transaksi.get("delivery_location", ""),
+            "profile_image_path": transaksi.get("profile_image_path", "/static/icon/user.jpg"),
+            "image_path": transaksi.get("image_path", "/static/icon/default_sim.png")
+        }
+
+        logger.info(f"Detail transaksi ditemukan untuk order_id: {order_id}")
+        return jsonify({"result": "success", "data": data}), 200
+    except Exception as e:
+        logger.error(f"Error saat mengambil detail transaksi: {str(e)}", exc_info=True)
+        return jsonify({"result": "failed", "message": f"Terjadi kesalahan: {str(e)}"}), 500
 
 
 @api.route("/api/check_username", methods=["POST"])
@@ -1833,3 +1953,217 @@ def check_username():
         return jsonify({"result": "ejected", "msg": "Username tidak valid"})
     else:
         return jsonify({"result": "available"})
+
+
+@api.route("/api/daftar_lokasi_mobil", methods=["GET"])
+def daftar_lokasi_mobil():
+    try:
+        # Ambil data mobil yang sedang digunakan atau dalam proses dari database
+        logger.info("Mengambil data mobil dari database")
+        mobil_digunakan = list(db.dataMobil.find(
+            {"status_transaksi": {"$in": ["Diproses", "digunakan"]}},
+            {"_id": 0}
+        ))
+        lokasi_mobil = []
+
+        # Zona waktu WITA
+        wita = timezone("Asia/Makassar")
+
+        for mobil in mobil_digunakan:
+            logger.info(f"Memproses mobil: {mobil['id_mobil']}")
+            # Cari transaksi untuk mobil ini
+            transaksi = db.transaction.find_one({
+                "id_mobil": mobil["id_mobil"],
+                "status_mobil": {"$in": ["Diproses", "digunakan"]}
+            })
+            if not transaksi:
+                logger.warning(f"Tidak ditemukan transaksi aktif untuk id_mobil: {mobil['id_mobil']}")
+                continue
+
+            lokasi = {
+                "id_mobil": mobil["id_mobil"],
+                "merek": mobil["merek"],
+                "plat": mobil["plat"],
+                "status": mobil["status"],
+                "order_id": transaksi.get("order_id", ""),
+                "penyewa": transaksi.get("penyewa", ""),
+                "lama_rental": transaksi.get("lama_rental", ""),
+                "date_rent": transaksi.get("date_rent", ""),
+                "end_rent": transaksi.get("end_rent", ""),
+                "timestamp": transaksi.get("created_at", ""),
+                "source": "transaksi"
+            }
+
+            # Prioritaskan data GPS dari perangkat
+            if mobil.get("gps_device_id") and mobil.get("gps_device_type"):
+                logger.info(f"Mengambil data GPS untuk id_mobil: {mobil['id_mobil']}")
+                gps_data = get_gps_data(mobil["id_mobil"], mobil["gps_device_type"])
+                if gps_data and isinstance(gps_data.get("lat"), (int, float)) and isinstance(gps_data.get("lon"), (int, float)):
+                    logger.info(f"Menggunakan data GPS untuk id_mobil: {mobil['id_mobil']}")
+                    alamat = get_alamat(gps_data["lat"], gps_data["lon"])
+                    lokasi.update({
+                        "lat": gps_data["lat"],
+                        "lon": gps_data["lon"],
+                        "alamat": alamat,
+                        "source": "gps"
+                    })
+                else:
+                    logger.warning(f"Data GPS tidak valid untuk id_mobil: {mobil['id_mobil']}")
+                    # Gunakan delivery_lat dan delivery_lon dari transaksi jika tersedia
+                    if transaksi.get("delivery_lat") and transaksi.get("delivery_lon"):
+                        logger.info(f"Menggunakan delivery_lat/lon untuk id_mobil: {mobil['id_mobil']}")
+                        alamat = get_alamat(transaksi["delivery_lat"], transaksi["delivery_lon"])
+                        lokasi.update({
+                            "lat": transaksi["delivery_lat"],
+                            "lon": transaksi["delivery_lon"],
+                            "alamat": alamat
+                        })
+                    else:
+                        # Gunakan delivery_location sebagai alamat
+                        logger.info(f"Menggunakan delivery_location untuk id_mobil: {mobil['id_mobil']}")
+                        lokasi.update({
+                            "lat": None,
+                            "lon": None,
+                            "alamat": transaksi.get("delivery_location", "Tidak ada alamat")
+                        })
+            else:
+                # Tidak ada GPS, gunakan delivery_lat dan delivery_lon dari transaksi
+                if transaksi.get("delivery_lat") and transaksi.get("delivery_lon"):
+                    logger.info(f"Menggunakan delivery_lat/lon untuk id_mobil: {mobil['id_mobil']}")
+                    alamat = get_alamat(transaksi["delivery_lat"], transaksi["delivery_lon"])
+                    lokasi.update({
+                        "lat": transaksi["delivery_lat"],
+                        "lon": transaksi["delivery_lon"],
+                        "alamat": alamat
+                    })
+                else:
+                    # Gunakan delivery_location sebagai alamat
+                    logger.info(f"Menggunakan delivery_location untuk id_mobil: {mobil['id_mobil']}")
+                    lokasi.update({
+                        "lat": None,
+                        "lon": None,
+                        "alamat": transaksi.get("delivery_location", "Tidak ada alamat")
+                    })
+
+            # Format timestamp
+            if isinstance(lokasi["timestamp"], datetime):
+                lokasi["timestamp"] = lokasi["timestamp"].astimezone(wita).strftime("%Y-%m-%d %H:%M:%S %Z")
+            else:
+                logger.warning(f"Field created_at tidak valid untuk transaksi id_mobil: {mobil['id_mobil']}")
+                lokasi["timestamp"] = datetime.now(wita).strftime("%Y-%m-%d %H:%M:%S %Z")
+
+            lokasi_mobil.append(lokasi)
+
+        logger.info(f"Mengembalikan {len(lokasi_mobil)} lokasi mobil")
+        return jsonify({"lokasi_mobil": lokasi_mobil}), 200
+
+    except pymongo.errors.PyMongoError as e:
+        logger.error(f"Error database saat mengambil lokasi mobil: {str(e)}")
+        return jsonify({"result": "unsuccess", "msg": f"Gagal mengakses database: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Error tak terduga saat mengambil lokasi mobil: {str(e)}", exc_info=True)
+        return jsonify({"result": "unsuccess", "msg": f"Terjadi kesalahan: {str(e)}"}), 500
+
+def get_gps_data(id_mobil, gps_device_type):
+    """
+    Ambil data GPS dari API eksternal berdasarkan tipe perangkat GPS.
+    Saat ini mengembalikan data dummy jika GPS tidak tersedia.
+    """
+    logger.info(f"get_gps_data dipanggil untuk id_mobil: {id_mobil}, gps_device_type: {gps_device_type}")
+
+    # Konfigurasi GPS dari .env
+    gps_configs = {
+        "teltonika": {
+            "api_endpoint": os.getenv("GPS_TELTONIKA_URL"),
+            "api_key": os.getenv("GPS_TELTONIKA_API_KEY"),
+            "method": os.getenv("GPS_TELTONIKA_METHOD", "GET")
+        },
+        "concox": {
+            "api_endpoint": os.getenv("GPS_CONCOX_URL"),
+            "api_key": os.getenv("GPS_CONCOX_API_KEY"),
+            "method": os.getenv("GPS_CONCOX_METHOD", "POST")
+        },
+        "dummy": {
+            "api_endpoint": None,
+            "method": None
+        }
+    }
+
+    # Ambil konfigurasi berdasarkan gps_device_type
+    config = gps_configs.get(gps_device_type.lower(), gps_configs["dummy"])
+
+    try:
+        # Jika dummy diaktifkan atau tidak ada API endpoint, gunakan data dummy
+        if os.getenv("GPS_DUMMY_ENABLED", "true").lower() == "true" or config["api_endpoint"] is None:
+            logger.info(f"Menggunakan data dummy untuk id_mobil: {id_mobil}")
+            lat_center = float(os.getenv("GPS_DUMMY_LAT_CENTER", -1.474))
+            lon_center = float(os.getenv("GPS_DUMMY_LON_CENTER", 124.842))
+            lat_range = float(os.getenv("GPS_DUMMY_LAT_RANGE", 0.05))
+            lon_range = float(os.getenv("GPS_DUMMY_LON_RANGE", 0.05))
+            lat = lat_center + random.uniform(-lat_range, lat_range)
+            lon = lon_center + random.uniform(-lon_range, lon_range)
+            timestamp = datetime.now(tz.gettz('Asia/Makassar')).strftime("%Y-%m-%d %H:%M:%S")
+            return {"lat": lat, "lon": lon, "timestamp": timestamp}
+
+        # Logika untuk Teltonika
+        if gps_device_type.lower() == "teltonika":
+            headers = {"Authorization": f"Bearer {config['api_key']}"}
+            params = {"device_id": id_mobil}
+            response = requests.get(config["api_endpoint"], headers=headers, params=params, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return {
+                "lat": data["latitude"],
+                "lon": data["longitude"],
+                "timestamp": data.get("timestamp", datetime.now(tz.gettz('Asia/Makassar')).strftime("%Y-%m-%d %H:%M:%S"))
+            }
+
+        # Logika untuk Concox
+        elif gps_device_type.lower() == "concox":
+            headers = {"Authorization": f"Bearer {config['api_key']}"}
+            payload = {"device_id": id_mobil}
+            response = requests.post(config["api_endpoint"], json=payload, headers=headers, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return {
+                "lat": data["lat"],
+                "lon": data["lng"],
+                "timestamp": data.get("time", datetime.now(tz.gettz('Asia/Makassar')).strftime("%Y-%m-%d %H:%M:%S"))
+            }
+
+        # Tambahkan logika untuk merek GPS lain di sini
+
+    except requests.RequestException as e:
+        logger.error(f"Gagal mengambil data GPS untuk id_mobil: {id_mobil}, gps_device_type: {gps_device_type}: {str(e)}")
+        # Fallback ke data dummy
+        lat_center = float(os.getenv("GPS_DUMMY_LAT_CENTER", -1.474))
+        lon_center = float(os.getenv("GPS_DUMMY_LON_CENTER", 124.842))
+        lat_range = float(os.getenv("GPS_DUMMY_LAT_RANGE", 0.05))
+        lon_range = float(os.getenv("GPS_DUMMY_LON_RANGE", 0.05))
+        lat = lat_center + random.uniform(-lat_range, lat_range)
+        lon = lon_center + random.uniform(-lon_range, lon_range)
+        timestamp = datetime.now(tz.gettz('Asia/Makassar')).strftime("%Y-%m-%d %H:%M:%S")
+        return {"lat": lat, "lon": lon, "timestamp": timestamp}
+
+    except Exception as e:
+        logger.error(f"Error tak terduga di get_gps_data untuk id_mobil: {id_mobil}: {str(e)}")
+        return None
+
+def get_alamat(lat, lon):
+    """
+    Ambil alamat dari koordinat menggunakan endpoint reverse_geocode.
+    """
+    try:
+        url = f"{request.url_root}api/reverse_geocode?lat={lat}&lon={lon}"
+        logger.info(f"Calling reverse_geocode: {url}")
+        headers = {
+            "User-Agent": "RentalMobilApp/1.0 (fickyrahanubun@gmail.com)"
+        }
+        response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        logger.info(f"Reverse geocode response: {data}")
+        return data.get("display_name", "Alamat tidak tersedia")
+    except requests.RequestException as e:
+        logger.error(f"Gagal mendapatkan alamat untuk lat={lat}, lon={lon}: {str(e)}")
+        return "Alamat tidak tersedia"

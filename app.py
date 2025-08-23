@@ -905,7 +905,18 @@ def verify_email():
 
 @app.route('/api/verify', methods=['POST'])
 def verify():
+    from datetime import datetime, timedelta  # Impor datetime dan timedelta
+
     user = db.users.find_one({'user_id' : request.form.get('user_id')})
+    
+    # Periksa apakah kode sebelumnya telah dikirim dan masih dalam batas 2 menit
+    if user.get('kode_sent_at'):
+        last_sent = user['kode_sent_at']
+        if datetime.utcnow() < last_sent + timedelta(minutes=2):
+            return jsonify({
+                'msg': 'failed',
+                'error': 'Kode verifikasi hanya dapat dikirim ulang setelah 2 menit. Silakan tunggu.'
+            }), 429
 
     kode = random.randint(10000, 99999)
     html_content = f"""
@@ -976,10 +987,17 @@ def verify():
 
     kode_hash = hashlib.sha256(str(kode).encode("utf-8")).hexdigest()
     
-    db.users.update_one({'user_id' : user['user_id']},{'$set' : {'verif' : 'sending_email', 'kode' : kode_hash}})
-    return jsonify({
-        'msg': 'succeess'
-    })
+    db.users.update_one(
+        {'user_id': user['user_id']},
+        {
+            '$set': {
+                'verif': 'sending_email',
+                'kode': kode_hash,
+                'kode_sent_at': datetime.utcnow()  # Simpan waktu pengiriman kode
+            }
+        }
+    )
+    return jsonify({'msg': 'success'})
 
 @app.route('/api/verify_kode', methods=['POST'])
 def verify_kode():

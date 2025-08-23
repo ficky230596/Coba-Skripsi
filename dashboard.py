@@ -101,12 +101,65 @@ def transaction():
     try:
         payload = jwt.decode(token_receive, SECRET_KEY_DASHBOARD, algorithms=['HS256'])
         user_info = db.users_admin.find_one({"username": payload["user"]})
-        data = db.transaction.find({})
-        return render_template('dashboard/transaction.html',user_info=user_info, data=data)
+        query = {
+            "end_rent": {"$exists": True, "$ne": ""},
+            "end_time": {"$exists": True, "$ne": ""}
+        }
+        # Ambil transaksi dengan status "Digunakan" terlebih dahulu
+        digunakan = list(db.transaction.find({**query, "status": "Digunakan"}).sort("date_rent", -1))
+        # Ambil transaksi lainnya, urutkan berdasarkan date_rent menurun
+        lainnya = list(db.transaction.find({**query, "status": {"$ne": "Digunakan"}}).sort("date_rent", -1))
+        # Gabungkan hasil
+        data = digunakan + lainnya
+        count = len(data)  # Hitung total transaksi
+        current_app.logger.info(f"Mengambil {count} transaksi untuk halaman transaksi")
+        return render_template('dashboard/transaction.html', user_info=user_info, data=data)
     except jwt.ExpiredSignatureError:
-         return redirect(url_for("dashboard.dashboard_login", msg="Your token has expired"))
+        current_app.logger.warning("Token dashboard kedaluwarsa")
+        return redirect(url_for("dashboard.dashboard_login", msg="Your token has expired"))
     except jwt.exceptions.DecodeError:
+        current_app.logger.warning("Token dashboard tidak valid")
         return redirect(url_for("dashboard.dashboard_login"))
+    except Exception as e:
+        current_app.logger.error(f"Error di rute transaction: {str(e)}")
+        return redirect(url_for("dashboard.dashboard_login", msg="Terjadi kesalahan"))
+
+@dashboard.route('/api/transaksi', methods=['GET'])
+def get_transactions():
+    try:
+        query = {
+            "end_rent": {"$exists": True, "$ne": ""},
+            "end_time": {"$exists": True, "$ne": ""}
+        }
+        # Ambil transaksi dengan status "Digunakan" terlebih dahulu
+        digunakan = list(db.transaction.find({**query, "status": "Digunakan"}).sort("date_rent", -1))
+        # Ambil transaksi lainnya, urutkan berdasarkan date_rent menurun
+        lainnya = list(db.transaction.find({**query, "status": {"$ne": "Digunakan"}}).sort("date_rent", -1))
+        data = digunakan + lainnya
+        response = [
+            {
+                "order_id": trans["order_id"],
+                "item": trans.get("item", ""),
+                "type_mobil": trans.get("type_mobil", ""),
+                "plat": trans.get("plat", ""),
+                "penyewa": trans.get("penyewa", ""),
+                "lama_rental": trans.get("lama_rental", ""),
+                "total": trans.get("total", 0),
+                "date_rent": trans.get("date_rent", ""),
+                "end_rent": trans.get("end_rent", ""),
+                "end_time": trans.get("end_time", ""),
+                "status": trans.get("status", ""),
+                "return_status": trans.get("status_pengembalian", ""),
+                "actual_return_date": trans.get("actual_return_date", ""),
+                "actual_return_time": trans.get("actual_return_time", ""),
+            }
+            for trans in data
+        ]
+        current_app.logger.info(f"Mengambil {len(response)} transaksi untuk API")
+        return jsonify(response), 200
+    except Exception as e:
+        current_app.logger.error(f"Error saat mengambil transaksi: {str(e)}")
+        return jsonify({"result": "error", "msg": "Terjadi kesalahan saat mengambil transaksi"}), 500
 
 @dashboard.route('/settings')
 def setting():
@@ -383,125 +436,233 @@ def dashboard_login_post():
             'msg' : 'password atau username salah'
         })
 
-@dashboard.route('/data_mobil/add-data', methods = ['POST'])
+@dashboard.route('/data_mobil/add-data', methods=['POST'])
 def addData_post():
-
-    payload = jwt.decode(request.cookies.get("tokenDashboard"), SECRET_KEY_DASHBOARD, algorithms=['HS256'])
-    user_info = db.users_admin.find_one({"username": payload["user"]})
-    id_mobil = uuid.uuid1()
-    merek = request.form.get('merek')
-    type_mobil = request.form.get('type_mobil')
-    plat = request.form.get('plat')
-    bahan_bakar = request.form.get('bahan_bakar')
-    seat = request.form.get('seat')
-    transmisi = request.form.get('transmisi')
-    harga = request.form.get('harga')
-
-    if merek == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'merek tidak boleh kosong'
-            })
-    elif type_mobil == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'type mobil tidak boleh kosong'
-            })
-    elif plat == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'plat tidak boleh kosong'
-        })
-    elif bahan_bakar == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'bahan bakar tidak boleh kosong'
-            })
-    elif seat == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'seat tidak boleh kosong'
-            })
-    elif transmisi == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'transmisi tidak boleh kosong'
-            })
-    elif harga == '':
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'harga tidak boleh kosong'
-        })
-
     try:
-        file = request.files['gambar']
-        extension = file.filename.split('.')[-1]
-        upload_date = datetime.now().strftime('%Y-%M-%d-%H-%m-%S')
-        gambar_name = f'mobil-{upload_date}.{extension}'
-        file.save(f'static/Gambar/mobil/{gambar_name}')
-    except:
-        return jsonify({
-            'result' : 'unsucces',
-            'msg' : 'Masukkan gambar'
-        }) 
+        # Verifikasi token
+        payload = jwt.decode(request.cookies.get("tokenDashboard"), SECRET_KEY_DASHBOARD, algorithms=['HS256'])
+        user_info = db.users_admin.find_one({"username": payload["user"]})
+        if not user_info:
+            current_app.logger.error(f"User admin tidak ditemukan: {payload['user']}")
+            return jsonify({'result': 'error', 'msg': 'User tidak ditemukan'}), 401
 
-    db.dataMobil.insert_one({
-        'id_mobil' : str(id_mobil),
-        'user' : user_info['username'],
-        'merek' : merek.capitalize(),
-        'type_mobil' : type_mobil.capitalize(),
-        'plat' : plat.capitalize(),
-        'bahan_bakar' : bahan_bakar.capitalize(),
-        'gambar' : gambar_name,
-        'seat' : seat.capitalize(),
-        'transmisi' : transmisi.capitalize(),
-        'harga' : harga.capitalize(),
-        'status' : 'tersedia'.capitalize(),
-    })
+        # Ambil data dari form
+        id_mobil = str(uuid.uuid1())
+        merek = request.form.get('merek')
+        type_mobil = request.form.get('type_mobil')
+        plat = request.form.get('plat')
+        bahan_bakar = request.form.get('bahan_bakar')
+        seat = request.form.get('seat')
+        transmisi = request.form.get('transmisi')
+        harga = request.form.get('harga')
+        gps_device_id = request.form.get('gps_device_id', '')
+        gps_device_type = request.form.get('gps_device_type', '')
 
-    return jsonify({'result':'success'})
+        # Validasi input
+        if not merek:
+            current_app.logger.error("Merek tidak diberikan")
+            return jsonify({'result': 'error', 'msg': 'Merek tidak boleh kosong'}), 400
+        if not type_mobil:
+            current_app.logger.error("Tipe mobil tidak diberikan")
+            return jsonify({'result': 'error', 'msg': 'Tipe mobil tidak boleh kosong'}), 400
+        if not plat or not re.match(r'^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$', plat, re.IGNORECASE):
+            current_app.logger.error(f"Plat nomor tidak valid: {plat}")
+            return jsonify({'result': 'error', 'msg': 'Plat nomor tidak valid (contoh: B 1234 ABC)'}), 400
+        if not bahan_bakar or bahan_bakar not in ['pertalite', 'pertamax', 'solar']:
+            current_app.logger.error(f"Bahan bakar tidak valid: {bahan_bakar}")
+            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus pertalite, pertamax, atau solar'}), 400
+        if not seat or not seat.isdigit() or int(seat) <= 0:
+            current_app.logger.error(f"Jumlah seat tidak valid: {seat}")
+            return jsonify({'result': 'error', 'msg': 'Jumlah seat harus angka positif'}), 400
+        if not transmisi or transmisi not in ['manual', 'matic']:
+            current_app.logger.error(f"Transmisi tidak valid: {transmisi}")
+            return jsonify({'result': 'error', 'msg': 'Transmisi harus manual atau matic'}), 400
+        if not harga or not harga.isdigit() or int(harga) <= 0:
+            current_app.logger.error(f"Harga tidak valid: {harga}")
+            return jsonify({'result': 'error', 'msg': 'Harga harus angka positif'}), 400
+        if gps_device_type and not gps_device_id:
+            current_app.logger.error("ID perangkat GPS kosong saat tipe GPS dipilih")
+            return jsonify({'result': 'error', 'msg': 'ID perangkat GPS harus diisi jika tipe perangkat dipilih'}), 400
+        if gps_device_type and gps_device_type not in ['teltonika', 'concox', '']:
+            current_app.logger.error(f"Tipe GPS tidak valid: {gps_device_type}")
+            return jsonify({'result': 'error', 'msg': 'Tipe GPS harus teltonika, concox, atau kosong'}), 400
 
-@dashboard.route('/data_mobil/update-data', methods = ['POST'])
+        # Proses gambar
+        try:
+            file = request.files['gambar']
+            if not file:
+                current_app.logger.error("Gambar tidak diunggah")
+                return jsonify({'result': 'error', 'msg': 'Gambar harus diunggah'}), 400
+
+            # Validasi ekstensi file
+            extension = file.filename.split('.')[-1].lower()
+            if extension not in ['jpg', 'jpeg', 'png']:
+                current_app.logger.error(f"Ekstensi file tidak valid: {extension}")
+                return jsonify({'result': 'error', 'msg': 'Gambar harus berformat JPG atau PNG'}), 400
+
+            # Simpan gambar
+            upload_date = datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
+            gambar_name = f'mobil-{upload_date}.{extension}'
+            file.save(f'static/Gambar/mobil/{gambar_name}')
+        except Exception as e:
+            current_app.logger.error(f"Gagal memproses gambar: {str(e)}")
+            return jsonify({'result': 'error', 'msg': f'Gagal memproses gambar: {str(e)}'}), 500
+
+        # Simpan data ke database
+        db.dataMobil.insert_one({
+            'id_mobil': id_mobil,
+            'user': user_info['username'],
+            'merek': merek,  # Tidak menggunakan capitalize()
+            'type_mobil': type_mobil,  # Tidak menggunakan capitalize()
+            'plat': plat.upper(),
+            'bahan_bakar': bahan_bakar.lower(),
+            'gambar': gambar_name,
+            'seat': int(seat),
+            'transmisi': transmisi.lower(),
+            'harga': int(harga),
+            'status': 'Tersedia',
+            'gps_device_id': gps_device_id,
+            'gps_device_type': gps_device_type
+        })
+
+        current_app.logger.info(f"Data mobil berhasil ditambahkan: {id_mobil}")
+        return jsonify({'result': 'success', 'msg': 'Data mobil berhasil ditambahkan'})
+
+    except jwt.ExpiredSignatureError:
+        current_app.logger.warning("Token dashboard kedaluwarsa")
+        return jsonify({'result': 'error', 'msg': 'Token kedaluwarsa, silakan login kembali'}), 401
+    except jwt.exceptions.DecodeError:
+        current_app.logger.warning("Token dashboard tidak valid")
+        return jsonify({'result': 'error', 'msg': 'Token tidak valid'}), 401
+    except Exception as e:
+        current_app.logger.error(f"Error saat menambahkan data mobil: {str(e)}")
+        return jsonify({'result': 'error', 'msg': f'Terjadi kesalahan: {str(e)}'}), 500
+
+@dashboard.route('/data_mobil/update-data', methods=['POST'])
 def updateData_post():
-
-    payload = jwt.decode(request.cookies.get("tokenDashboard"), SECRET_KEY_DASHBOARD, algorithms=['HS256'])
-    user_info = db.users_admin.find_one({"username": payload["user"]})
-    id_mobil = request.form.get('id_mobil')
-    merek = request.form.get('merek')
-    type_mobil = request.form.get('type_mobil')
-    plat = request.form.get('plat')
-    bahan_bakar = request.form.get('bahan_bakar')
-    seat = request.form.get('seat')
-    transmisi = request.form.get('transmisi')
-    harga = request.form.get('harga')
-
-    data = db.dataMobil.find_one({"id_mobil": id_mobil})
-
     try:
-        file = request.files['gambar']
-        os.remove(f"static/Gambar/mobil/{data['gambar']}")
-        extension = file.filename.split('.')[-1]
-        upload_date = datetime.now().strftime('%Y-%M-%d-%H-%m-%S')
-        gambar_name = f'mobil-{upload_date}.{extension}'
-        file.save(f'static/Gambar/mobil/{gambar_name}')
-    except:
-        gambar_name = data['gambar']
+        # Verifikasi token
+        payload = jwt.decode(request.cookies.get("tokenDashboard"), SECRET_KEY_DASHBOARD, algorithms=['HS256'])
+        user_info = db.users_admin.find_one({"username": payload["user"]})
+        if not user_info:
+            current_app.logger.error(f"User admin tidak ditemukan: {payload['user']}")
+            return jsonify({'result': 'error', 'msg': 'User tidak ditemukan'}), 401
 
-    db.dataMobil.update_one({'id_mobil' : id_mobil},
-    {'$set':{
-        'user' : user_info['username'],
-        'merek' : merek.capitalize(),
-        'type_mobil' : type_mobil.capitalize(),
-        'plat' : plat.capitalize(),
-        'bahan_bakar' : bahan_bakar.capitalize(),
-        'gambar' : gambar_name,
-        'seat' : seat.capitalize(),
-        'transmisi' : transmisi.capitalize(),
-        'harga' : harga.capitalize(),
-        'status' : 'tersedia'.capitalize(),
-    }})
+        # Ambil data dari form
+        id_mobil = request.form.get('id_mobil')
+        merek = request.form.get('merek')
+        type_mobil = request.form.get('type_mobil')
+        plat = request.form.get('plat')
+        bahan_bakar = request.form.get('bahan_bakar')
+        seat = request.form.get('seat')
+        transmisi = request.form.get('transmisi')
+        harga = request.form.get('harga')
+        gps_device_id = request.form.get('gps_device_id', '')
+        gps_device_type = request.form.get('gps_device_type', '')
 
-    return jsonify({'result':'success'})
+        # Validasi input
+        if not id_mobil:
+            current_app.logger.error("ID mobil tidak diberikan")
+            return jsonify({'result': 'error', 'msg': 'ID mobil tidak boleh kosong'}), 400
+        if not merek:
+            current_app.logger.error("Merek tidak diberikan")
+            return jsonify({'result': 'error', 'msg': 'Merek tidak boleh kosong'}), 400
+        if not type_mobil:
+            current_app.logger.error("Tipe mobil tidak diberikan")
+            return jsonify({'result': 'error', 'msg': 'Tipe mobil tidak boleh kosong'}), 400
+        if not plat or not re.match(r'^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$', plat, re.IGNORECASE):
+            current_app.logger.error(f"Plat nomor tidak valid: {plat}")
+            return jsonify({'result': 'error', 'msg': 'Plat nomor tidak valid (contoh: B 1234 ABC)'}), 400
+        if not bahan_bakar or bahan_bakar not in ['pertalite', 'pertamax', 'solar']:
+            current_app.logger.error(f"Bahan bakar tidak valid: {bahan_bakar}")
+            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus pertalite, pertamax, atau solar'}), 400
+        if not seat or not seat.isdigit() or int(seat) <= 0:
+            current_app.logger.error(f"Jumlah seat tidak valid: {seat}")
+            return jsonify({'result': 'error', 'msg': 'Jumlah seat harus angka positif'}), 400
+        if not transmisi or transmisi not in ['manual', 'matic']:
+            current_app.logger.error(f"Transmisi tidak valid: {transmisi}")
+            return jsonify({'result': 'error', 'msg': 'Transmisi harus manual atau matic'}), 400
+        if not harga or not harga.isdigit() or int(harga) <= 0:
+            current_app.logger.error(f"Harga tidak valid: {harga}")
+            return jsonify({'result': 'error', 'msg': 'Harga harus angka positif'}), 400
+        if gps_device_type and not gps_device_id:
+            current_app.logger.error("ID perangkat GPS kosong saat tipe GPS dipilih")
+            return jsonify({'result': 'error', 'msg': 'ID perangkat GPS harus diisi jika tipe perangkat dipilih'}), 400
+        if gps_device_type and gps_device_type not in ['teltonika', 'concox', '']:
+            current_app.logger.error(f"Tipe GPS tidak valid: {gps_device_type}")
+            return jsonify({'result': 'error', 'msg': 'Tipe GPS harus teltonika, concox, atau kosong'}), 400
+
+        # Cek apakah mobil ada
+        data = db.dataMobil.find_one({"id_mobil": id_mobil})
+        if not data:
+            current_app.logger.error(f"Mobil tidak ditemukan: {id_mobil}")
+            return jsonify({'result': 'error', 'msg': 'Mobil tidak ditemukan'}), 404
+
+        # Cek apakah mobil sedang digunakan
+        if data.get('status') == 'Digunakan':
+            current_app.logger.warning(f"Mobil sedang digunakan, tidak bisa diedit: {id_mobil}")
+            return jsonify({'result': 'error', 'msg': 'Mobil sedang digunakan, tidak dapat diedit'}), 400
+
+        # Proses gambar
+        try:
+            file = request.files['gambar']
+            if file:
+                # Validasi ekstensi file
+                extension = file.filename.split('.')[-1].lower()
+                if extension not in ['jpg', 'jpeg', 'png']:
+                    current_app.logger.error(f"Ekstensi file tidak valid: {extension}")
+                    return jsonify({'result': 'error', 'msg': 'Gambar harus berformat JPG atau PNG'}), 400
+
+                # Hapus gambar lama
+                if data['gambar']:
+                    try:
+                        os.remove(f"static/Gambar/mobil/{data['gambar']}")
+                    except FileNotFoundError:
+                        current_app.logger.warning(f"Gambar lama tidak ditemukan: {data['gambar']}")
+
+                # Simpan gambar baru
+                upload_date = datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
+                gambar_name = f'mobil-{upload_date}.{extension}'
+                file.save(f'static/Gambar/mobil/{gambar_name}')
+            else:
+                gambar_name = data['gambar']
+        except KeyError:
+            gambar_name = data['gambar']
+        except Exception as e:
+            current_app.logger.error(f"Gagal memproses gambar: {str(e)}")
+            return jsonify({'result': 'error', 'msg': f'Gagal memproses gambar: {str(e)}'}), 500
+
+        # Update data di database
+        db.dataMobil.update_one(
+            {'id_mobil': id_mobil},
+            {'$set': {
+                'user': user_info['username'],
+                'merek': merek,  # Tidak menggunakan capitalize()
+                'type_mobil': type_mobil,  # Tidak menggunakan capitalize()
+                'plat': plat.upper(),
+                'bahan_bakar': bahan_bakar.lower(),
+                'gambar': gambar_name,
+                'seat': int(seat),
+                'transmisi': transmisi.lower(),
+                'harga': int(harga),
+                'status': data.get('status', 'Tersedia'),
+                'gps_device_id': gps_device_id,
+                'gps_device_type': gps_device_type
+            }}
+        )
+
+        current_app.logger.info(f"Data mobil berhasil diperbarui: {id_mobil}")
+        return jsonify({'result': 'success', 'msg': 'Data mobil berhasil diperbarui'})
+
+    except jwt.ExpiredSignatureError:
+        current_app.logger.warning("Token dashboard kedaluwarsa")
+        return jsonify({'result': 'error', 'msg': 'Token kedaluwarsa, silakan login kembali'}), 401
+    except jwt.exceptions.DecodeError:
+        current_app.logger.warning("Token dashboard tidak valid")
+        return jsonify({'result': 'error', 'msg': 'Token tidak valid'}), 401
+    except Exception as e:
+        current_app.logger.error(f"Error saat memperbarui data mobil: {str(e)}")
+        return jsonify({'result': 'error', 'msg': f'Terjadi kesalahan: {str(e)}'}), 500
 
 
 @dashboard.route('/transaction/add_transaction')
@@ -682,3 +843,38 @@ def forgot_password():
     else:
         current_app.logger.error(f"Metode tidak valid: {mtd}")
         return jsonify({'result': 'gagal', 'msg': 'Metode tidak valid'})
+    
+@dashboard.route('/lokasi_mobil')
+def lokasi_mobil():
+    token_receive = request.cookies.get("tokenDashboard")
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY_DASHBOARD, algorithms=['HS256'])
+        user_info = db.users_admin.find_one({"username": payload["user"]})
+        if not user_info:
+            current_app.logger.error(f"User admin tidak ditemukan: {payload['user']}")
+            return redirect(url_for("dashboard.dashboard_login", msg="User tidak ditemukan"))
+
+        mobil_digunakan = list(db.dataMobil.find({"status": "Digunakan"}, {"_id": 0}))
+        mobil_with_coords = []
+
+        for mobil in mobil_digunakan:
+            transaksi = db.transaction.find_one({"id_mobil": mobil["id_mobil"], "status_mobil": "digunakan"})
+            if transaksi and transaksi.get("delivery_lat") and transaksi.get("delivery_lon"):
+                mobil['lat'] = transaksi["delivery_lat"]
+                mobil['lon'] = transaksi["delivery_lon"]
+            else:
+                mobil['lat'] = -1.474 + random.uniform(-0.05, 0.05)
+                mobil['lon'] = 124.844 + random.uniform(-0.05, 0.05)
+            mobil_with_coords.append(mobil)
+
+        current_app.logger.info(f"Mobil yang sedang digunakan: {len(mobil_with_coords)}")
+        return render_template('dashboard/lokasi_mobil.html', user_info=user_info, mobil_digunakan=mobil_with_coords)
+    except jwt.ExpiredSignatureError:
+        current_app.logger.warning("Token dashboard kedaluwarsa")
+        return redirect(url_for("dashboard.dashboard_login", msg="Your token has expired"))
+    except jwt.exceptions.DecodeError:
+        current_app.logger.warning("Token dashboard tidak valid")
+        return redirect(url_for("dashboard.dashboard_login"))
+    except Exception as e:
+        current_app.logger.error(f"Error di rute lokasi_mobil: {str(e)}")
+        return redirect(url_for("dashboard.dashboard_login", msg="Terjadi kesalahan"))

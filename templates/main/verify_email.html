@@ -32,6 +32,9 @@
             <button type="button" class="btn btn-primary btn-block mt-3" onclick="verifyKode('{{ user_info.user_id }}')">
                 Verifikasi
             </button>
+            <button type="button" class="btn btn-secondary btn-block mt-3" onclick="sendVerify('{{ user_info.user_id }}')">
+                Kirim Ulang Kode
+            </button>
             {% else %}
             <button type="button" class="btn btn-primary btn-block mt-3" onclick="sendVerify('{{ user_info.user_id }}')">
                 Kirim Email
