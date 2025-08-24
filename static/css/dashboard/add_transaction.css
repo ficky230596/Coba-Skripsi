@@ -1,21 +1,113 @@
-#gambar_mobil{
-    height: 10rem;
+/* static/css/dashboard/add_transaction.css */
+
+/* Pastikan semua gaya berada di bawah namespace .add-transaction */
+.add-transaction {
+    /* Gaya untuk wrapper utama */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
-.item-car{
+/* Gaya untuk judul dashboard */
+.add-transaction .title-dashboard h2 {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Gaya untuk section car-list */
+.add-transaction .car-list-section {
+    background-color: #fff;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.add-transaction .car-list-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.add-transaction .car-list .item-car {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
     cursor: pointer;
+    transition: transform 0.2s;
 }
 
-.list-invoice{
-    list-style-type: none;
-}
-.list-invoice li{
-    width: 40%;
-}
-.list-invoice li .key{
-    width: 50%;
+.add-transaction .car-list .item-car.selected {
+    border-color: #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    transform: scale(1.02);
 }
 
-.selected{
-    border: 2px solid #007bff;
+.add-transaction .car-list .item-car img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.add-transaction .car-list .item-car .card-body {
+    padding: 15px;
+}
+
+.add-transaction .car-list .item-car .card-body h5 {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+}
+
+.add-transaction .car-list .item-car .card-body p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Gaya untuk section pembayaran */
+.add-transaction .pembayaran-section {
+    background-color: #fff;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.add-transaction .pembayaran-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.add-transaction .list-invoice li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.add-transaction .list-invoice .form-control,
+.add-transaction .list-invoice .form-select {
+    max-width: 300px;
+}
+
+.add-transaction .list-invoice .btn-primary {
+    padding: 10px 20px;
+    font-size: 1rem;
+}
+
+/* Gaya untuk pengantaran-section */
+.add-transaction .pengantaran-section {
+    transition: opacity 0.3s ease;
+}
+
+.add-transaction .pengantaran-section[style*="display: none"] {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.add-transaction .pengantaran-section:not([style*="display: none"]) {
+    opacity: 1;
+    height: auto;
+}
+
+/* Pastikan ikon kustom tidak mengganggu halaman lain */
+.add-transaction .eicon-seat,
+.add-transaction .eicon-transmission {
+    display: inline-block;
+    font-size: 1.25rem;
+    margin-right: 8px;
 }

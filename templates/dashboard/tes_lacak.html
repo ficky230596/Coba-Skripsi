@@ -40,9 +40,9 @@
                 </select>
             </div>
             <div id="mobil-info" {% if not selected_mobil_id %}style="display: none;"{% endif %}>
-                <h4>Perbarui Lokasi Mobil: <span id="mobil-name">{{ mobil.merek }} - {{ mobil.plat }}</span></h4>
+                <h4>Perbarui Lokasi Mobil: <span id="mobil-name">{{ mobil.merek | default("Tidak ada mobil") }} - {{ mobil.plat | default("") }}</span></h4>
                 <form id="form-lokasi">
-                    <input type="hidden" id="id_mobil" name="id_mobil" value="{{ selected_mobil_id }}">
+                    <input type="hidden" id="id_mobil" name="id_mobil" value="{{ selected_mobil_id | default("") }}">
                     <div class="mb-3">
                         <label class="form-label">Koordinat Terpilih</label>
                         <p id="selected-coords" class="form-text">Klik pada peta untuk memilih lokasi.</p>

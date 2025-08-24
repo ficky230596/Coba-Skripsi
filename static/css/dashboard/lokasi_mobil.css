@@ -309,3 +309,73 @@
         max-width: 200px;
     }
 }
+
+/* Perlebar modal detail transaksi */
+#transactionDetailModal .modal-dialog {
+    max-width: 90vw; /* Lebar maksimum 90% dari viewport */
+    width: 1200px; /* Lebar default untuk layar besar */
+}
+
+#transactionDetailModal .modal-content {
+    border-radius: 8px;
+}
+
+#transactionDetailModal .modal-body {
+    padding: 20px; /* Tambah padding untuk ruang ekstra */
+}
+
+#transactionDetailModal .row {
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+#transactionDetailModal .col-md-6 {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Pastikan konten di dalam card tetap rapi */
+#transactionDetailModal .card {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* Responsif untuk layar kecil */
+@media (max-width: 1200px) {
+    #transactionDetailModal .modal-dialog {
+        max-width: 95vw; /* Lebih lebar di layar sedang */
+        width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    #transactionDetailModal .modal-dialog {
+        max-width: 100vw; /* Penuh di layar kecil */
+        margin: 10px;
+    }
+    #transactionDetailModal .modal-body {
+        padding: 15px;
+    }
+    #transactionDetailModal .row {
+        margin-left: -10px;
+        margin-right: -10px;
+    }
+    #transactionDetailModal .col-md-6 {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    #transactionDetailModal .modal-dialog {
+        max-width: 100vw;
+        margin: 5px;
+    }
+    #transactionDetailModal .modal-body {
+        padding: 10px;
+    }
+    #transactionDetailModal .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%; /* Kolom penuh di layar sangat kecil */
+    }
+}

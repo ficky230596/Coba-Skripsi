@@ -178,25 +178,38 @@ def setting():
 def change_username():
     new_username = request.form.get('new_username')
     username = request.form.get('username')
-    data = db.users_admin.find_one({'username' : username})
-    if datetime.now() < data['expired_username']:
-        print('tes')
+    data = db.users_admin.find_one({'username': username})
+
+    expired_at = data.get('expired_username')  # aman, bisa None kalau tidak ada
+
+    # kalau expired_username ada dan belum lewat, user tidak boleh ganti
+    if expired_at and datetime.now() < expired_at:
         return jsonify({
-            'result' : 'failed',
-            'msg' : 'username telah diubah coba lagi nanti'
+            'result': 'failed',
+            'msg': 'username telah diubah, coba lagi nanti'
         })
-    else:
-        exp = datetime.now() + relativedelta(months=1)
-        db.users_admin.update_one({'username' : username}, {'$set' : {'username' : new_username, 'expired_username' : exp}})
-        payload = {
-            "user": new_username,
-            "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
-        }
-        token = jwt.encode(payload, SECRET_KEY_DASHBOARD, algorithm="HS256")
-        return jsonify({
-            "result": "success",
-            "token": token
-        })
+
+    # kalau tidak ada expired_username atau sudah lewat waktunya → boleh ganti
+    exp = datetime.now() + relativedelta(months=1)
+    db.users_admin.update_one(
+        {'username': username},
+        {'$set': {
+            'username': new_username,
+            'expired_username': exp
+        }}
+    )
+
+    payload = {
+        "user": new_username,
+        "exp": datetime.utcnow() + timedelta(days=1),  # token 1 hari
+    }
+    token = jwt.encode(payload, SECRET_KEY_DASHBOARD, algorithm="HS256")
+
+    return jsonify({
+        "result": "success",
+        "token": token
+    })
+
     
 
 @dashboard.route('/settings/change_email', methods=['GET', 'POST'])
@@ -468,15 +481,15 @@ def addData_post():
         if not plat or not re.match(r'^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$', plat, re.IGNORECASE):
             current_app.logger.error(f"Plat nomor tidak valid: {plat}")
             return jsonify({'result': 'error', 'msg': 'Plat nomor tidak valid (contoh: B 1234 ABC)'}), 400
-        if not bahan_bakar or bahan_bakar not in ['pertalite', 'pertamax', 'solar']:
+        if not bahan_bakar or bahan_bakar not in ['Pertalite', 'Pertamax', 'Solar']:
             current_app.logger.error(f"Bahan bakar tidak valid: {bahan_bakar}")
-            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus pertalite, pertamax, atau solar'}), 400
+            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus Pertalite, Pertamax, atau Solar'}), 400
         if not seat or not seat.isdigit() or int(seat) <= 0:
             current_app.logger.error(f"Jumlah seat tidak valid: {seat}")
             return jsonify({'result': 'error', 'msg': 'Jumlah seat harus angka positif'}), 400
-        if not transmisi or transmisi not in ['manual', 'matic']:
+        if not transmisi or transmisi not in ['Manual', 'Matic']:
             current_app.logger.error(f"Transmisi tidak valid: {transmisi}")
-            return jsonify({'result': 'error', 'msg': 'Transmisi harus manual atau matic'}), 400
+            return jsonify({'result': 'error', 'msg': 'Transmisi harus Manual atau Matic'}), 400
         if not harga or not harga.isdigit() or int(harga) <= 0:
             current_app.logger.error(f"Harga tidak valid: {harga}")
             return jsonify({'result': 'error', 'msg': 'Harga harus angka positif'}), 400
@@ -512,13 +525,13 @@ def addData_post():
         db.dataMobil.insert_one({
             'id_mobil': id_mobil,
             'user': user_info['username'],
-            'merek': merek,  # Tidak menggunakan capitalize()
-            'type_mobil': type_mobil,  # Tidak menggunakan capitalize()
+            'merek': merek,
+            'type_mobil': type_mobil,
             'plat': plat.upper(),
-            'bahan_bakar': bahan_bakar.lower(),
+            'bahan_bakar': bahan_bakar,  # Tidak menggunakan .lower()
             'gambar': gambar_name,
             'seat': int(seat),
-            'transmisi': transmisi.lower(),
+            'transmisi': transmisi,  # Tidak menggunakan .lower()
             'harga': int(harga),
             'status': 'Tersedia',
             'gps_device_id': gps_device_id,
@@ -573,24 +586,24 @@ def updateData_post():
         if not plat or not re.match(r'^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$', plat, re.IGNORECASE):
             current_app.logger.error(f"Plat nomor tidak valid: {plat}")
             return jsonify({'result': 'error', 'msg': 'Plat nomor tidak valid (contoh: B 1234 ABC)'}), 400
-        if not bahan_bakar or bahan_bakar not in ['pertalite', 'pertamax', 'solar']:
+        if not bahan_bakar or bahan_bakar.lower() not in ['pertalite', 'pertamax', 'solar']:
             current_app.logger.error(f"Bahan bakar tidak valid: {bahan_bakar}")
-            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus pertalite, pertamax, atau solar'}), 400
+            return jsonify({'result': 'error', 'msg': 'Bahan bakar harus Pertalite, Pertamax, atau Solar'}), 400
         if not seat or not seat.isdigit() or int(seat) <= 0:
             current_app.logger.error(f"Jumlah seat tidak valid: {seat}")
             return jsonify({'result': 'error', 'msg': 'Jumlah seat harus angka positif'}), 400
-        if not transmisi or transmisi not in ['manual', 'matic']:
+        if not transmisi or transmisi.lower() not in ['manual', 'matic']:
             current_app.logger.error(f"Transmisi tidak valid: {transmisi}")
-            return jsonify({'result': 'error', 'msg': 'Transmisi harus manual atau matic'}), 400
+            return jsonify({'result': 'error', 'msg': 'Transmisi harus Manual atau Matic'}), 400
         if not harga or not harga.isdigit() or int(harga) <= 0:
             current_app.logger.error(f"Harga tidak valid: {harga}")
             return jsonify({'result': 'error', 'msg': 'Harga harus angka positif'}), 400
         if gps_device_type and not gps_device_id:
             current_app.logger.error("ID perangkat GPS kosong saat tipe GPS dipilih")
             return jsonify({'result': 'error', 'msg': 'ID perangkat GPS harus diisi jika tipe perangkat dipilih'}), 400
-        if gps_device_type and gps_device_type not in ['teltonika', 'concox', '']:
+        if gps_device_type and gps_device_type.lower() not in ['teltonika', 'concox', '']:
             current_app.logger.error(f"Tipe GPS tidak valid: {gps_device_type}")
-            return jsonify({'result': 'error', 'msg': 'Tipe GPS harus teltonika, concox, atau kosong'}), 400
+            return jsonify({'result': 'error', 'msg': 'Tipe GPS harus Teltonika, Concox, atau kosong'}), 400
 
         # Cek apakah mobil ada
         data = db.dataMobil.find_one({"id_mobil": id_mobil})
@@ -632,22 +645,22 @@ def updateData_post():
             current_app.logger.error(f"Gagal memproses gambar: {str(e)}")
             return jsonify({'result': 'error', 'msg': f'Gagal memproses gambar: {str(e)}'}), 500
 
-        # Update data di database
+        # Update data di database dengan huruf pertama besar
         db.dataMobil.update_one(
             {'id_mobil': id_mobil},
             {'$set': {
                 'user': user_info['username'],
-                'merek': merek,  # Tidak menggunakan capitalize()
-                'type_mobil': type_mobil,  # Tidak menggunakan capitalize()
+                'merek': merek.title(),  # Huruf pertama setiap kata besar
+                'type_mobil': type_mobil.title(),  # Huruf pertama setiap kata besar
                 'plat': plat.upper(),
-                'bahan_bakar': bahan_bakar.lower(),
+                'bahan_bakar': bahan_bakar.title(),  # Huruf pertama besar
                 'gambar': gambar_name,
                 'seat': int(seat),
-                'transmisi': transmisi.lower(),
+                'transmisi': transmisi.title(),  # Huruf pertama besar
                 'harga': int(harga),
                 'status': data.get('status', 'Tersedia'),
                 'gps_device_id': gps_device_id,
-                'gps_device_type': gps_device_type
+                'gps_device_type': gps_device_type.title() if gps_device_type else ''
             }}
         )
 

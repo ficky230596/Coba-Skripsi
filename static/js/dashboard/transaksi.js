@@ -136,6 +136,7 @@ $(document).ready(function () {
     $('#modal-type-mobil').text(data.type_mobil);
     $('#modal-plat').text(data.plat);
     $('#modal-penyewa').text(data.penyewa);
+    $('#modal-phone').text(data.phone || '-'); // Tampilkan nomor telepon atau '-' jika kosong
     $('#modal-lama-rental').text(data.lama_rental);
     $('#modal-total').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data.total));
     $('#modal-date-rent').text(data.date_rent);

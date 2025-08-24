@@ -40,6 +40,78 @@ $(document).ready(function () {
   // Update total harga saat input berubah
   $("#hari, #gunakan_sopir, #delivery_cost").on("change keyup", updateTotal);
 
+  // Fungsi untuk mengompresi gambar menggunakan Canvas
+  function compressImage(file, callback) {
+    if (!file) {
+      callback(null);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      const img = new Image();
+      img.onload = function () {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Tentukan dimensi maksimum
+        const maxWidth = 800;
+        const maxHeight = 800;
+        let width = img.width;
+        let height = img.height;
+
+        // Hitung rasio untuk mengubah ukuran
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        // Atur ukuran canvas
+        canvas.width = width;
+        canvas.height = height;
+
+        // Gambar ulang gambar di canvas
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Konversi ke JPEG dengan kualitas 0.8
+        canvas.toBlob(
+          function (blob) {
+            if (!blob) {
+              toastr.error("Gagal mengompresi gambar");
+              callback(null);
+              return;
+            }
+            // Buat file baru dari blob dengan nama asli
+            const compressedFile = new File([blob], file.name, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            callback(compressedFile);
+          },
+          "image/jpeg",
+          0.8 // Kualitas kompresi (80%)
+        );
+      };
+      img.onerror = function () {
+        toastr.error("Gagal memuat gambar");
+        callback(null);
+      };
+      img.src = event.target.result;
+    };
+    reader.onerror = function () {
+      toastr.error("Gagal membaca file gambar");
+      callback(null);
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Handler untuk submit form
   $("#transactionForm").on("submit", function (event) {
     event.preventDefault(); // Cegah reload default
@@ -47,11 +119,14 @@ $(document).ready(function () {
     const id_mobil = $("#val_merek").attr("data-id");
     const hari = parseInt($("#hari").val()) || 0;
     const penyewa = $("#penyewa").val().trim();
+    const phone = $("#phone").val().trim();
     const gunakan_sopir = $("#gunakan_sopir").is(":checked");
     const gunakan_pengantaran = $("#gunakan_pengantaran").is(":checked");
     const delivery_cost = parseInt($("#delivery_cost").val()) || 0;
     const delivery_location = $("#delivery_location").val().trim();
     const mtd = $("#pembayaran").val();
+    const profile_image = $("#profile_image")[0].files[0];
+    const sim_image = $("#sim_image")[0].files[0];
 
     // Validasi input
     if (!id_mobil) {
@@ -74,8 +149,21 @@ $(document).ready(function () {
       toastr.warning("Nama penyewa minimal 3 karakter");
       return;
     }
+    if (phone && !/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ""))) {
+      toastr.warning("Nomor telepon tidak valid (10-15 digit)");
+      return;
+    }
     if (gunakan_pengantaran && !delivery_location) {
       toastr.warning("Masukkan lokasi pengantaran");
+      return;
+    }
+    // Validasi ukuran file sebelum kompresi
+    if (profile_image && profile_image.size > 5 * 1024 * 1024) {
+      toastr.warning("Foto profil terlalu besar (maksimum 5MB)");
+      return;
+    }
+    if (sim_image && sim_image.size > 5 * 1024 * 1024) {
+      toastr.warning("Foto SIM terlalu besar (maksimum 5MB)");
       return;
     }
 
@@ -100,51 +188,63 @@ $(document).ready(function () {
       cancelButtonText: "Batal",
     }).then((result) => {
       if (result.isConfirmed) {
-        // Kirim data ke server
-        const formData = new FormData();
-        formData.append("mtd", mtd);
-        formData.append("id_mobil", id_mobil);
-        formData.append("hari", hari);
-        formData.append("penyewa", penyewa);
-        formData.append("gunakan_sopir", gunakan_sopir);
-        formData.append("gunakan_pengantaran", gunakan_pengantaran);
-        formData.append("delivery_cost", delivery_cost);
-        formData.append("delivery_location", delivery_location);
+        // Kompresi gambar sebelum mengirim
+        compressImage(profile_image, function (compressedProfileImage) {
+          compressImage(sim_image, function (compressedSimImage) {
+            // Kirim data ke server
+            const formData = new FormData();
+            formData.append("mtd", mtd);
+            formData.append("id_mobil", id_mobil);
+            formData.append("hari", hari);
+            formData.append("penyewa", penyewa);
+            if (phone) formData.append("phone", phone);
+            formData.append("gunakan_sopir", gunakan_sopir);
+            formData.append("gunakan_pengantaran", gunakan_pengantaran);
+            formData.append("delivery_cost", delivery_cost);
+            formData.append("delivery_location", delivery_location);
+            if (compressedProfileImage) {
+              formData.append("profile_image", compressedProfileImage, `profile_${compressedProfileImage.name}`);
+            }
+            if (compressedSimImage) {
+              formData.append("sim_image", compressedSimImage, `sim_${compressedSimImage.name}`);
+            }
 
-        $.ajax({
-          type: "POST",
-          url: "/api/add_transaction_from_admin",
-          data: formData,
-          processData: false,
-          contentType: false,
-          xhrFields: {
-            withCredentials: true, // Kirim cookie
-          },
-          success: function (response) {
-            if (response.result === "success") {
-              toastr.success(response.message, "Sukses", {
-                onHidden: function () {
-                  window.location.replace("/transaction");
-                },
-              });
-            } else {
-              toastr.error(response.message || "Transaksi gagal");
-            }
-          },
-          error: function (xhr) {
-            const errorMsg = xhr.responseJSON?.message || "Terjadi kesalahan saat memproses transaksi";
-            toastr.error(errorMsg);
-            if (errorMsg.includes("Sesi kadaluarsa") || errorMsg.includes("Token tidak ditemukan")) {
-              Swal.fire({
-                icon: "error",
-                title: "Sesi Kadaluarsa",
-                text: "Sesi Anda telah berakhir. Silakan login kembali.",
-                confirmButtonText: "Ke Halaman Login",
-              }).then(() => {
-                window.location.href = "/login";
-              });
-            }
-          },
+            $.ajax({
+              type: "POST",
+              url: "/api/add_transaction_from_admin",
+              data: formData,
+              processData: false,
+              contentType: false,
+              xhrFields: {
+                withCredentials: true,
+              },
+              success: function (response) {
+                if (response.result === "success") {
+                  toastr.success(response.message, "Sukses", {
+                    onHidden: function () {
+                      window.location.replace("/transaction");
+                    },
+                  });
+                } else {
+                  toastr.error(response.message || "Transaksi gagal");
+                }
+              },
+              error: function (xhr) {
+                const errorMsg = xhr.responseJSON?.message || "Terjadi kesalahan saat memproses transaksi";
+                toastr.error(errorMsg);
+                if (errorMsg.includes("Sesi kadaluarsa") || errorMsg.includes("Token tidak ditemukan")) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Sesi Kadaluarsa",
+                    text: "Sesi Anda telah berakhir. Silakan login kembali.",
+                    confirmButtonText: "Ke Halaman Login",
+                  }).then(() => {
+                    window.location.href = "/login";
+                  });
+                }
+              },
+            });
+          });
         });
       }
     });
@@ -158,6 +258,9 @@ $(".item-car").each(function () {
     // Reset form
     $("#hari").val("");
     $("#penyewa").val("");
+    $("#phone").val("");
+    $("#profile_image").val("");
+    $("#sim_image").val("");
     $("#gunakan_sopir").prop("checked", false);
     $("#gunakan_pengantaran").prop("checked", false);
     $(".pengantaran-section").hide();

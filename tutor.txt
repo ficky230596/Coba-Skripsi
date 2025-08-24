@@ -1,5 +1,5 @@
 git add .
-git commit -m "perbaiki riderect"
+git commit -m "perbaiki penulisan"
 git push
 
 

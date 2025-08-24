@@ -3,6 +3,8 @@ from threading import Thread, Lock
 from time import sleep
 from pytz import timezone
 import re  # Tambahkan impor ini
+from dateutil import tz
+from werkzeug.utils import secure_filename
 import hashlib
 import heapq
 import json
@@ -558,6 +560,7 @@ def create_transaction():
         "order_id": order_id,
         "id_mobil": id_mobil,
         "penyewa": data_user["name"],
+        "phone": data_user["phone"],
         "transaction_token": transaction_token,
         "item": data_mobil["merek"],
         "type_mobil": data_mobil["type_mobil"],
@@ -1458,22 +1461,27 @@ def confirmPesanan():
 def get_transaction_detail(order_id):
     logger.info(f"Menerima permintaan untuk detail transaksi: order_id={order_id}")
     try:
+        # Cari transaksi berdasarkan order_id
         transaction = db.transaction.find_one({"order_id": order_id})
         if not transaction:
             logger.error(f"Transaksi tidak ditemukan: order_id={order_id}")
             return jsonify({"result": "error", "msg": "Transaksi tidak ditemukan"}), 404
 
-        user = db.users.find_one({"user_id": transaction["user_id"]})
-        if not user:
-            logger.error(f"Pengguna tidak ditemukan: user_id={transaction['user_id']}")
-            return jsonify({"result": "error", "msg": "Teransaksi di lakukan manual"}), 404
+        # Cari data pengguna jika user_id ada
+        user = None
+        if transaction.get("user_id"):
+            user = db.users.find_one({"user_id": transaction["user_id"]})
+            if not user:
+                logger.warning(f"Pengguna tidak ditemukan untuk user_id: {transaction['user_id']}, menggunakan nilai dari transaksi")
 
+        # Siapkan data respons
         response = {
             "order_id": transaction["order_id"],
             "item": transaction.get("item", ""),
             "type_mobil": transaction.get("type_mobil", ""),
             "plat": transaction.get("plat", ""),
             "penyewa": transaction.get("penyewa", ""),
+            "phone": transaction.get("phone", None),
             "lama_rental": transaction.get("lama_rental", ""),
             "total": transaction.get("total", 0),
             "date_rent": transaction.get("date_rent", "Menunggu konfirmasi"),
@@ -1491,16 +1499,15 @@ def get_transaction_detail(order_id):
             "delivery_location": transaction.get("delivery_location", ""),
             "delivery_lat": transaction.get("delivery_lat", None),
             "delivery_lon": transaction.get("delivery_lon", None),
-            "profile_image_path": user.get(
-                "profile_image_path", "/static/icon/user.jpg"
-            ),
-            "image_path": user.get("image_path", "/static/icon/user.jpg"),
+            "profile_image_path": transaction.get("profile_image_path", "/static/icon/user.jpg") if not user else user.get("profile_image_path", "/static/icon/user.jpg"),
+            "image_path": transaction.get("image_path", "/static/icon/default_sim.png") if not user else user.get("image_path", "/static/icon/default_sim.png"),
         }
 
         logger.info(f"Detail transaksi berhasil diambil: order_id={order_id}")
         return jsonify({"result": "success", "data": response}), 200
+
     except Exception as e:
-        logger.error(f"Error saat mengambil detail transaksi {order_id}: {str(e)}")
+        logger.error(f"Error saat mengambil detail transaksi {order_id}: {str(e)}", exc_info=True)
         return (
             jsonify(
                 {
@@ -1510,7 +1517,6 @@ def get_transaction_detail(order_id):
             ),
             500,
         )
-
 
 @api.route("/api/delete_mobil", methods=["POST"])
 def delete_mobil():
@@ -1676,11 +1682,17 @@ def add_transaction_from_admin():
             request.form.get("delivery_location", "") if gunakan_pengantaran else ""
         )
 
+        # Ambil file gambar dari form
+        profile_image = request.files.get("profile_image")  # Foto muka
+        sim_image = request.files.get("sim_image")  # Foto SIM
+
         # Log data yang diterima
         logger.info(
             f"Data diterima: mtd={mtd}, id_mobil={id_mobil}, hari={hari}, penyewa={penyewa}, "
             f"phone={phone}, gunakan_sopir={gunakan_sopir}, gunakan_pengantaran={gunakan_pengantaran}, "
-            f"delivery_cost={delivery_cost}, delivery_location={delivery_location}"
+            f"delivery_cost={delivery_cost}, delivery_location={delivery_location}, "
+            f"profile_image={profile_image.filename if profile_image else None}, "
+            f"sim_image={sim_image.filename if sim_image else None}"
         )
 
         # Validasi input
@@ -1763,6 +1775,59 @@ def add_transaction_from_admin():
                 400,
             )
 
+        # Validasi dan simpan file gambar ke folder khusus untuk transaksi manual
+        upload_folder = "static/uploads/manual"
+        os.makedirs(upload_folder, exist_ok=True)  # Buat folder jika belum ada
+        allowed_extensions = {"jpg", "jpeg", "png"}
+        max_file_size = 5 * 1024 * 1024  # 5MB
+
+        profile_image_path = "/static/icon/user.jpg"  # Default
+        sim_image_path = "/static/icon/default_sim.png"  # Default
+
+        def validate_and_save_file(file, prefix):
+            if not file:
+                return None
+            filename = secure_filename(file.filename)
+            ext = filename.rsplit(".", 1)[1].lower() if "." in filename else ""
+            if ext not in allowed_extensions:
+                logger.error(f"Ekstensi file tidak valid: {filename}")
+                return None
+            if file.content_length > max_file_size:
+                logger.error(f"Ukuran file terlalu besar: {filename}")
+                return None
+            unique_filename = f"{prefix}_{uuid.uuid4().hex}.{ext}"
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            return f"/{file_path}"
+
+        # Simpan foto muka
+        if profile_image:
+            profile_image_path = validate_and_save_file(profile_image, "profile")
+            if not profile_image_path:
+                return (
+                    jsonify(
+                        {
+                            "result": "failed",
+                            "message": "Foto muka tidak valid (hanya JPG/PNG, maks 5MB)",
+                        }
+                    ),
+                    400,
+                )
+
+        # Simpan foto SIM
+        if sim_image:
+            sim_image_path = validate_and_save_file(sim_image, "sim")
+            if not sim_image_path:
+                return (
+                    jsonify(
+                        {
+                            "result": "failed",
+                            "message": "Foto SIM tidak valid (hanya JPG/PNG, maks 5MB)",
+                        }
+                    ),
+                    400,
+                )
+
         # Ambil data mobil
         logger.info(f"Mencari mobil dengan id_mobil: {id_mobil}")
         data_mobil = db.dataMobil.find_one({"id_mobil": id_mobil})
@@ -1842,6 +1907,8 @@ def add_transaction_from_admin():
             "status_mobil": "Diproses",
             "created_at": now,
             "payment_confirmed_at": now,
+            "profile_image_path": profile_image_path,
+            "image_path": sim_image_path,
         }
 
         # Simpan transaksi ke database
@@ -1864,7 +1931,7 @@ def add_transaction_from_admin():
             jsonify(
                 {
                     "result": "success",
-                    "message": "Transaksi Berhasil, menunggu konfirmasi admin",
+                    "message": "Transaksi Berhasil, Silakan Konfirmasi Pesanan",
                     "data": {
                         "order_id": order_id,
                         "merek": data_mobil["merek"],
@@ -1876,11 +1943,14 @@ def add_transaction_from_admin():
                         "total": total_harga,
                         "lama_rental": f"{hari} hari",
                         "penyewa": penyewa,
+                        "phone": cleaned_phone,
                         "date_rent": date_rent,
                         "end_rent": end_rent,
                         "delivery_lat": delivery_lat,
                         "delivery_lon": delivery_lon,
                         "delivery_location": delivery_location,
+                        "profile_image_path": profile_image_path,
+                        "image_path": sim_image_path,
                     },
                 }
             ),
@@ -1905,37 +1975,40 @@ def add_transaction_from_admin():
 @api.route("/api/detail_admin/<order_id>", methods=["GET"])
 def detail_admin(order_id):
     try:
+        logger.info(f"Mengambil detail transaksi admin untuk order_id: {order_id}")
         transaksi = db.transaction.find_one({"order_id": order_id})
         if not transaksi:
-            logger.error(f"Transaksi tidak ditemukan: order_id={order_id}")
+            logger.error(f"Transaksi tidak ditemukan untuk order_id: {order_id}")
             return jsonify({"result": "failed", "message": "Transaksi tidak ditemukan"}), 404
 
+        # Data respons untuk modal
         data = {
             "order_id": transaksi["order_id"],
-            "item": transaksi.get("item", ""),
+            "item": transaksi["item"],
             "type_mobil": transaksi.get("type_mobil", ""),
             "plat": transaksi.get("plat", ""),
-            "penyewa": transaksi.get("penyewa", ""),
-            "lama_rental": transaksi.get("lama_rental", ""),
-            "total": transaksi.get("total", 0),
-            "date_rent": transaksi.get("date_rent", ""),
-            "end_rent": transaksi.get("end_rent", ""),
+            "penyewa": transaksi["penyewa"],
+            "phone": transaksi.get("phone", None),
+            "lama_rental": transaksi["lama_rental"],
+            "total": transaksi["total"],
+            "date_rent": transaksi["date_rent"],
+            "end_rent": transaksi["end_rent"],
             "end_time": transaksi.get("end_time", ""),
-            "status": transaksi.get("status", ""),
+            "status": transaksi["status"],
             "biaya_sopir": transaksi.get("biaya_sopir", 0),
             "gunakan_pengantaran": transaksi.get("gunakan_pengantaran", False),
             "delivery_cost": transaksi.get("delivery_cost", 0),
             "delivery_location": transaksi.get("delivery_location", ""),
             "profile_image_path": transaksi.get("profile_image_path", "/static/icon/user.jpg"),
-            "image_path": transaksi.get("image_path", "/static/icon/default_sim.png")
+            "image_path": transaksi.get("image_path", "/static/icon/default_sim.png"),
         }
 
-        logger.info(f"Detail transaksi ditemukan untuk order_id: {order_id}")
+        logger.info(f"Detail transaksi admin ditemukan untuk order_id: {order_id}")
         return jsonify({"result": "success", "data": data}), 200
-    except Exception as e:
-        logger.error(f"Error saat mengambil detail transaksi: {str(e)}", exc_info=True)
-        return jsonify({"result": "failed", "message": f"Terjadi kesalahan: {str(e)}"}), 500
 
+    except Exception as e:
+        logger.error(f"Error saat mengambil detail transaksi admin untuk order_id: {order_id}, error: {str(e)}", exc_info=True)
+        return jsonify({"result": "failed", "message": f"Terjadi kesalahan: {str(e)}"}), 500
 
 @api.route("/api/check_username", methods=["POST"])
 def check_username():

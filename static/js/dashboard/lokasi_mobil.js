@@ -257,6 +257,7 @@ window.showTransactionDetail = function (order_id, element) {
                 $('#modal-type-mobil').text(data.type_mobil || '');
                 $('#modal-plat').text(data.plat || '');
                 $('#modal-penyewa').text(data.penyewa || '');
+                $('#modal-phone').text(data.phone || '');
                 $('#modal-lama-rental').text(data.lama_rental || '');
                 $('#modal-total').text(data.total ? `Rp ${data.total.toLocaleString('id-ID')}` : '');
                 $('#modal-date-rent').text(data.date_rent || 'Menunggu konfirmasi');

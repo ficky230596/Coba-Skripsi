@@ -667,10 +667,12 @@
 
 .modal-content {
     border-radius: 10px;
+    background-color: #3791ebda;
 }
 
 .modal-body .form-group {
     margin-bottom: 15px;
+    /* background-color: #007bff; */
 }
 
 .price-range {
